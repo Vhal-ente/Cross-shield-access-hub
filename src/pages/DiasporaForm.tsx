@@ -1,0 +1,126 @@
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { FaLocationDot } from 'react-icons/fa6';
+import { FiMail } from 'react-icons/fi';
+
+interface FormData {
+  fullName: string;
+  phone: string;
+  email: string;
+  location: string;
+}
+
+const DiasporaForm = () => {
+  const [formData, setFormData] = useState<FormData>({
+    fullName: '',
+    phone: '',
+    email: '',
+    location: 'New York, United States',
+  });
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(formData);
+    // Add submission logic here (e.g., API call)
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-xl shadow-md w-[45%] p-8">
+        <h1 className="text-3xl font-bold mb-8">Help a loved One</h1>
+        <p className="text-[#106FB2] text-xl font-normal mb-8">For Diaspora</p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Full Name */}
+          <div>
+            <label className="block mb-1 font-medium text-sm">Full Name</label>
+            <input
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+
+          {/* Phone & Email */}
+          <div className="flex gap-2">
+            {/* Phone */}
+            <div className="w-1/2">
+              <label className="block mb-1 font-normal text-md">
+                Contact number (How we reach you)
+              </label>
+              <div className="flex border border-gray-300 rounded-md items-center px-2">
+                <span className="text-gray-600 text-sm pr-1">+370</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone number"
+                  className="flex-1 px-4 py-2 outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="w-1/2">
+              <label className="block mb-1 font-normal text-md">Email</label>
+              <div className="flex border border-gray-300 rounded-md items-center px-2">
+                <FiMail className="text-gray-500" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Email address"
+                  className="flex-1 px-4 py-2 outline-none"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block mb-1 font-medium text-md">Location</label>
+            <div className="relative">
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-8 py-2 pr-10 appearance-none"
+              >
+                <option>New York, United States</option>
+                <option>London, United Kingdom</option>
+                <option>Toronto, Canada</option>
+              </select>
+              <FaLocationDot className="absolute left-3 top-3 text-gray-500" />
+            </div>
+          </div>
+
+          {/* Info Note */}
+          <p className="text-sm text-gray-600 mt-2">
+            <span className="inline-block mr-1">ⓘ</span>
+            Check your email for login details and managing beneficiaries
+          </p>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="mt-4 w-[100px] bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-all"
+          >
+            Submit →
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+export default DiasporaForm;
