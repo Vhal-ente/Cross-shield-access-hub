@@ -86,34 +86,6 @@ const HealthcareForm = () =>{
                 />
               </div>
             </div>
-            {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contact number (How we reach you)
-            </label>
-            <div className="flex space-x-2">
-              <div className="relative">
-                <select
-                  value={formData.countryCode}
-                  onChange={(e) => handleChange('countryCode', e.target.value)}
-                  className="px-3 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-8"
-                >
-                  <option value="+370">🇱🇹 +370</option>
-                  <option value="+1">🇺🇸 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                </select>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <ChevronDown size={14} className="text-gray-400" />
-                </div>
-              </div>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div> */}
-
             <div className="w-1/2">
               <label className="block mb-1 font-medium text-sm">Email</label>
               <div className="flex border border-gray-300 rounded-md items-center px-2">
