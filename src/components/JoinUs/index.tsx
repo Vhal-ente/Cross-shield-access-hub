@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // ✅ Import Link
 
 const joinOptions = [
   {
@@ -6,20 +7,20 @@ const joinOptions = [
     description:
       "Get more patients, better margins, and faster restocking. Join the Cross Shield network.",
     buttonLabel: "Join Now",
-    link: "/src/pages/HealthcareForm"
+    link: "/healthcare-form"
   },
   {
     title: "For Suppliers",
     description: "Bring your products closer to the people who need them.",
     buttonLabel: "Partner With Us",
-    link: "/src/pages/SupplierForm"
+    link: "/supplier-form"
   },
   {
     title: "For Diaspora",
     description:
       "Take care of your family’s medication needs—securely and transparently.",
     buttonLabel: "Support Loved Ones",
-    link: "/src/pages/DiasporaForm"
+    link: "/diaspora-form"
   }
 ];
 
@@ -36,7 +37,7 @@ const JoinSection = () => {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-        {joinOptions.map((option, index) =>
+        {joinOptions.map((option, index) => (
           <div
             key={index}
             className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition"
@@ -50,15 +51,15 @@ const JoinSection = () => {
               </p>
             </div>
             <div className="mt-6 flex justify-center">
-              <button
-                type="button"
+              <Link
+                to={option.link}
                 className="border border-[#106FB2] text-[#212121] px-5 py-2 rounded-full text-sm font-medium transition hover:bg-[#106FB2] hover:text-white"
               >
                 {option.buttonLabel}
-              </button>
+              </Link>
             </div>
           </div>
-        )}
+        ))}
       </div>
     </section>
   );
