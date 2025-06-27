@@ -20,18 +20,18 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/diaspora-form" element={<DiasporaForm />} />
-          <Route path="/supplier-form" element={<SupplierForm />} />
-          <Route path="/healthcare-form" element={<HealthcareForm />} />  
-          <Route path="/medication-form" element={<MedicationForm />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <BrowserRouter basename="/Cross-shield-access-hub">
+  <Routes>
+    <Route path="/" element={<LandingPage />} />
+    <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/diaspora-form" element={<DiasporaForm />} />
+    <Route path="/supplier-form" element={<SupplierForm />} />
+    <Route path="/healthcare-form" element={<HealthcareForm />} />
+    <Route path="/medication-form" element={<MedicationForm />} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+</BrowserRouter>
+
     </TooltipProvider>
   </QueryClientProvider>
 );
