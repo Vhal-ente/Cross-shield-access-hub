@@ -24,16 +24,18 @@ const HeroSection = () => {
               Access Dashboard →
             </button>
             </Link>
+            <Link to="/medication-form">
             <button className="border border-gray-400 text-gray-800 px-5 py-2 rounded-full hover:bg-gray-100 transition">
               Request Medications
             </button>
+            </Link>
           </div>
         </div>
 
         {/* Image */}
         <div className="w-full">
           <img
-            src="/src/assets/health care 1.png" // Replace this with your actual image path
+            src= '/src/assets/health care 1.png' // Replace this with your actual image path
             alt="Healthcare worker with patients"
             className="rounded-[2rem] w-full object-cover"
           />

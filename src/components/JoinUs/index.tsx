@@ -6,20 +6,20 @@ const joinOptions = [
     description:
       "Get more patients, better margins, and faster restocking. Join the Cross Shield network.",
     buttonLabel: "Join Now",
-    link: "#"
+    link: "/src/pages/HealthcareForm"
   },
   {
     title: "For Suppliers",
     description: "Bring your products closer to the people who need them.",
     buttonLabel: "Partner With Us",
-    link: "#"
+    link: "/src/pages/SupplierForm"
   },
   {
     title: "For Diaspora",
     description:
       "Take care of your family’s medication needs—securely and transparently.",
     buttonLabel: "Support Loved Ones",
-    link: "#"
+    link: "/src/pages/DiasporaForm"
   }
 ];
 
