@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import { BsWhatsapp } from 'react-icons/bs';
+import healthcareImage from '@/assets/health care 1.png';
 
 const HeroSection = () => {
   return (
-    <div className="bg-[#F9FAFB] text-gray-900">
+    <div id='home' className="bg-[#F9FAFB] text-gray-900">
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-lg">
         {/* Text Content */}
         <div className="space-y-6">
@@ -33,9 +34,9 @@ const HeroSection = () => {
         </div>
 
         {/* Image */}
-        <div className="w-full">
+        <div className="w-full mt-14">
           <img
-            src= '/src/assets/health care 1.png' // Replace this with your actual image path
+            src= {healthcareImage} // Replace this with your actual image path
             alt="Healthcare worker with patients"
             className="rounded-[2rem] w-full object-cover"
           />

@@ -33,7 +33,7 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-12">
+    <section id='testimonials' className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-12">
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h2 className="text-4xl font-light text-gray-900">What Our Partners Say</h2>
         <p className="mt-2 text-sm sm:text-base text-[#9CA3AF] max-w-2xl mx-auto">

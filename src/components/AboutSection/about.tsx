@@ -3,7 +3,7 @@ import { FaShieldAlt, FaHeart, FaLightbulb, FaGlobeAfrica, FaUsers } from 'react
 
 const AboutSection = () => {
   return (
-    <section className="bg-[#F9FAFB] text-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <section id='about' className="bg-[#F9FAFB] text-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Left Side: Story, Mission, Vision */}
         <div className="space-y-6">
