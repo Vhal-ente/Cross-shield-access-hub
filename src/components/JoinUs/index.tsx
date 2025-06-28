@@ -26,7 +26,7 @@ const joinOptions = [
 
 const JoinSection = () => {
   return (
-    <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-12">
+    <section id="support" className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-12">
       <div className="max-w-5xl mx-auto text-center mb-12">
         <h2 className="text-4xl font-light text-gray-900">Join the Movement</h2>
         <p className="mt-2 text-sm sm:text-base text-[#9CA3AF]">

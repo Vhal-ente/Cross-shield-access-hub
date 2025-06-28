@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import CrossShield from '@/assets/cross shield 1.png'; // Adjust this path if needed
+import CrossShield from '@/assets/cross shield 1.png';
 import { HiMenu, HiX } from 'react-icons/hi';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'About us', path: '/src/components/AboutSection/about.tsx' },
-    { name: 'Products', path: '/products' },
-    { name: 'Testimonials', path: '/src/components/TestimonialsSection' },
-    { name: 'Support', path: 'src/components/JoinUs' },
+    { name: 'Home', path: '#home' },
+    { name: 'About us', path: '#about' },
+    { name: 'Products', path: '#products' },
+    { name: 'Testimonials', path: '#testimonials' },
+    { name: 'Support', path: '#support' },
   ];
 
   return (
-    <header className="w-full bg-white shadow-sm">
+    <header className="w-full bg-white shadow-sm fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="border border-none p-1">
@@ -25,17 +24,13 @@ const Navbar = () => {
         {/* Desktop Nav */}
         <nav className="hidden md:flex space-x-6 text-md font-quicksand font-medium">
           {navLinks.map((link) => (
-            <NavLink
+            <a
               key={link.name}
-              to={link.path}
-              className={({ isActive }) =>
-                `transition ${
-                  isActive ? 'text-black-600 font-semibold' : 'text-gray-400'
-                } hover:text-gray-500`
-              }
+              href={link.path}
+              className="text-gray-600 hover:text-[#106FB2] transition"
             >
               {link.name}
-            </NavLink>
+            </a>
           ))}
         </nav>
 
@@ -55,18 +50,14 @@ const Navbar = () => {
         <div className="md:hidden bg-white px-4 pb-4 flex justify-end">
           <div className="flex flex-col items-end space-y-2 text-sm">
             {navLinks.map((link) => (
-              <NavLink
+              <a
                 key={link.name}
-                to={link.path}
+                href={link.path}
                 onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  `transition ${
-                    isActive ? 'text-blue-600 font-semibold' : 'text-gray-400'
-                  } hover:text-blue-500`
-                }
+                className="text-gray-600 hover:text-blue-600 transition"
               >
                 {link.name}
-              </NavLink>
+              </a>
             ))}
           </div>
         </div>
