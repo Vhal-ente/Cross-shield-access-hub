@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { ChevronDown, MapPin, Plus, Info, ChevronRight } from 'lucide-react';
+import { ChevronDown, MapPin, Plus, Info, ChevronRight, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type FormData = {
   fullName: string;
@@ -13,6 +14,7 @@ type FormData = {
 };
 
 const MedicationForm: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     fullName: 'John',
     location: 'New York, United States',
@@ -46,12 +48,25 @@ const MedicationForm: React.FC = () => {
     // Add your API logic here
   };
 
+  const handleClose = () => {
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-lg p-8 w-[45%]">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Request Medication</h1>
+        <div className="flex justify-between items-start mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Request Medication</h1>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close form"
+          >
+            <X className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>

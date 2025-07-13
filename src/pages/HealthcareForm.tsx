@@ -1,7 +1,8 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { FaLocationDot } from 'react-icons/fa6';
 import { FiMail } from 'react-icons/fi';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface HealthcareFormData {
   fullName: string;
@@ -13,6 +14,7 @@ interface HealthcareFormData {
 }
 
 const HealthcareForm = () =>{
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<HealthcareFormData>({
     fullName: '',
     licenseNumber: '',
@@ -32,13 +34,28 @@ const HealthcareForm = () =>{
     // Replace with actual API submission logic
   };
 
+  const handleClose = () => {
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-md w-[45%] p-8">
-        <h1 className="text-3xl font-bold mb-8">Join the Movement</h1>
-        <p className="text-[#106FB2] text-xl font-light mb-8">For Healthcare Professionals</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Join the Movement</h1>
+            <p className="text-[#106FB2] text-xl font-light mt-2">For Healthcare Professionals</p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close form"
+          >
+            <X className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Full Name & License Number */}
           <div className="flex gap-2">
             <div className="w-1/2">

@@ -1,6 +1,8 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { FaLocationDot } from 'react-icons/fa6';
 import { FiMail } from 'react-icons/fi';
+import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SupplierFormData {
   fullName: string;
@@ -11,6 +13,7 @@ interface SupplierFormData {
 }
 
 const SupplierForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<SupplierFormData>({
     fullName: '',
     businessName: '',
@@ -32,13 +35,28 @@ const SupplierForm = () => {
     // Add your submission logic here (e.g. API call)
   };
 
+  const handleClose = () => {
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-md w-[40%] p-8">
-        <h1 className="text-3xl font-bold mb-8">Join the Movement</h1>
-        <p className="text-[#106FB2] text-xl font-normal mb-8">For Suppliers</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Join the Movement</h1>
+            <p className="text-[#106FB2] text-xl font-normal mt-2">For Suppliers</p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close form"
+          >
+            <X className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Full Name & Business Name */}
           <div className="flex gap-2">
             <div className="w-1/2">

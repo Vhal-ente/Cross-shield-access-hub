@@ -1,6 +1,8 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { FaLocationDot } from 'react-icons/fa6';
 import { FiMail } from 'react-icons/fi';
+import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface FormData {
   fullName: string;
@@ -10,6 +12,7 @@ interface FormData {
 }
 
 const DiasporaForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     phone: '',
@@ -28,13 +31,28 @@ const DiasporaForm = () => {
     // Add submission logic here (e.g., API call)
   };
 
+  const handleClose = () => {
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-md w-[45%] p-8">
-        <h1 className="text-3xl font-bold mb-8">Help a loved One</h1>
-        <p className="text-[#106FB2] text-xl font-normal mb-8">For Diaspora</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Help a loved One</h1>
+            <p className="text-[#106FB2] text-xl font-normal mt-2">For Diaspora</p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close form"
+          >
+            <X className="w-6 h-6 text-gray-500" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           {/* Full Name */}
           <div>
             <label className="block mb-1 font-medium text-sm">Full Name</label>
