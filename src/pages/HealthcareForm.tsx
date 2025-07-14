@@ -57,19 +57,19 @@ const HealthcareForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Full Name & License Number */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-            <div className="w-full sm:w-1/2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
               <label className="block mb-2 font-medium text-sm sm:text-base">Full Name</label>
               <input
                 name="fullName"
                 value={formData.fullName}
                 onChange={(e) => handleChange('fullName', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 outline-none text-base"
+                className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                 placeholder="Full name"
                 required
               />
             </div>
-            <div className="w-full sm:w-1/2">
+            <div>
               <label className="block mb-2 font-medium text-sm sm:text-base">
                 PCN / MBC (License Number)
               </label>
@@ -77,7 +77,7 @@ const HealthcareForm = () => {
                 name="licenseNumber"
                 value={formData.licenseNumber}
                 onChange={(e) => handleChange('licenseNumber', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 outline-none text-base"
+                className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                 placeholder="License number"
                 required
               />
@@ -85,12 +85,12 @@ const HealthcareForm = () => {
           </div>
 
           {/* Phone & Email */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-            <div className="w-full sm:w-1/2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
               <label className="block mb-2 font-medium text-sm sm:text-base">
                 Contact number (How we reach you)
               </label>
-              <div className="flex border border-gray-300 rounded-md items-center px-2">
+              <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
                 <span className="text-gray-600 text-sm pr-1">+370</span>
                 <input
                   type="tel"
@@ -98,15 +98,15 @@ const HealthcareForm = () => {
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                   placeholder="Phone number"
-                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base"
+                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                   required
                 />
               </div>
             </div>
 
-            <div className="w-full sm:w-1/2">
+            <div>
               <label className="block mb-2 font-medium text-sm sm:text-base">Email</label>
-              <div className="flex border border-gray-300 rounded-md items-center px-2">
+              <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
                 <FiMail className="text-gray-500 flex-shrink-0" />
                 <input
                   type="email"
@@ -114,7 +114,7 @@ const HealthcareForm = () => {
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
                   placeholder="Email address"
-                  className="flex-1 py-3 sm:py-2 px-3 sm:px-4 outline-none text-base"
+                  className="flex-1 py-3 sm:py-2 px-3 sm:px-4 outline-none text-base min-w-0"
                   required
                 />
               </div>

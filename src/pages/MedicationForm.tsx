@@ -134,7 +134,7 @@ const MedicationForm: React.FC = () => {
           </div>
 
           {/* Medication & Urgency */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2">Name of Medication</label>
               <input
@@ -142,7 +142,7 @@ const MedicationForm: React.FC = () => {
                 value={formData.medicationName}
                 onChange={(e) => handleInputChange('medicationName', e.target.value)}
                 placeholder="Medication name"
-                className="w-full px-3 sm:px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                className="w-full px-3 sm:px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base min-w-0"
               />
             </div>
             <div>
@@ -153,7 +153,7 @@ const MedicationForm: React.FC = () => {
                 <select
                   value={formData.urgency}
                   onChange={(e) => handleInputChange('urgency', e.target.value)}
-                  className="w-full px-3 sm:px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-10 text-base"
+                  className="w-full px-3 sm:px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-10 text-base min-w-0"
                 >
                   <option value="Today, Tomorrow, within the week">Today, Tomorrow, within the week</option>
                   <option value="Today">Today</option>

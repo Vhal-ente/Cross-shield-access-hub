@@ -67,13 +67,13 @@ const DiasporaForm = () => {
           </div>
 
           {/* Phone & Email */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Phone */}
-            <div className="w-full sm:w-1/2">
+            <div>
               <label className="block mb-2 font-normal text-sm sm:text-base">
                 Contact number (How we reach you)
               </label>
-              <div className="flex border border-gray-300 rounded-md items-center px-2">
+              <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
                 <span className="text-gray-600 text-sm pr-1">+370</span>
                 <input
                   type="tel"
@@ -81,16 +81,16 @@ const DiasporaForm = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone number"
-                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base"
+                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                   required
                 />
               </div>
             </div>
 
             {/* Email */}
-            <div className="w-full sm:w-1/2">
+            <div>
               <label className="block mb-2 font-normal text-sm sm:text-base">Email</label>
-              <div className="flex border border-gray-300 rounded-md items-center px-2">
+              <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
                 <FiMail className="text-gray-500 flex-shrink-0" />
                 <input
                   type="email"
@@ -98,7 +98,7 @@ const DiasporaForm = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Email address"
-                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base"
+                  className="flex-1 px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                   required
                 />
               </div>
