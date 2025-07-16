@@ -8,14 +8,14 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '#home' },
     { name: 'About us', path: '#about' },
-    { name: 'Products', path: '#products' },
+    // { name: 'Products', path: '#products' },
     { name: 'Testimonials', path: '#testimonials' },
     { name: 'Support', path: '#support' },
   ];
 
   return (
     <header className="w-full bg-white shadow-sm fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo */}
         <div className="border border-none p-1">
           <img src={CrossShield} alt="Cross Shield Logo" className="h-14 w-auto" />

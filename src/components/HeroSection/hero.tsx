@@ -22,7 +22,7 @@ const HeroSection = () => {
           <div className="flex flex-wrap gap-4">
           <Link to ="/dashboard">
             <button className="bg-[#106FB2] text-white px-5 py-2 rounded-full hover:bg-[#106FC1] transition">
-              Access Dashboard →
+              Get Started →
             </button>
             </Link>
             <Link to="/medication-form">
