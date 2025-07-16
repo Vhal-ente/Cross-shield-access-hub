@@ -134,7 +134,7 @@ const DiasporaForm = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full sm:w-auto min-w-[120px] bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-all touch-manipulation text-base"
+            className="w-full sm:w-auto min-w-[120px] bg-[#106FB2] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#106FC1] transition-all touch-manipulation text-base"
           >
             Submit →
           </button>

@@ -223,7 +223,7 @@ const MedicationForm: React.FC = () => {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full sm:w-auto min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 touch-manipulation text-base"
+            className="w-full sm:w-auto min-w-[120px] bg-[#106FB2] hover:bg-[#106FC1] text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 touch-manipulation text-base"
           >
             <span>Submit</span>
             <ChevronRight size={16} />
