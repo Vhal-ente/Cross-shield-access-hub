@@ -1,7 +1,7 @@
-import Env from '@ioc:Adonis/Core/Env'
-import { DatabaseConfig } from '@ioc:Adonis/Lucid/Database'
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/lucid'
 
-const databaseConfig: DatabaseConfig = {
+const databaseConfig = defineConfig({
   /*
   |--------------------------------------------------------------------------
   | Default Connection
@@ -11,38 +11,9 @@ const databaseConfig: DatabaseConfig = {
   | the Query Builder.
   |
   */
-  connection: Env.get('DB_CONNECTION', 'sqlite'),
+  connection: env.get('DB_CONNECTION'),
 
   connections: {
-    /*
-    |--------------------------------------------------------------------------
-    | SQLite
-    |--------------------------------------------------------------------------
-    |
-    | Configuration for the SQLite database.  Make sure to install the driver
-    | from npm when using this connection
-    |
-    | npm i sqlite3
-    |
-    */
-    sqlite: {
-      client: 'sqlite',
-      connection: {
-        filename: Env.get('DB_DATABASE', './tmp/db.sqlite3'),
-      },
-      pool: {
-        afterCreate: (conn, cb) => {
-          conn.run('PRAGMA foreign_keys=true', cb)
-        }
-      },
-      migrations: {
-        naturalSort: true,
-      },
-      useNullAsDefault: true,
-      healthCheck: false,
-      debug: false,
-    },
-
     /*
     |--------------------------------------------------------------------------
     | MySQL config
@@ -57,11 +28,11 @@ const databaseConfig: DatabaseConfig = {
     mysql: {
       client: 'mysql2',
       connection: {
-        host: Env.get('DB_HOST'),
-        port: Env.get('DB_PORT'),
-        user: Env.get('DB_USER'),
-        password: Env.get('DB_PASSWORD', ''),
-        database: Env.get('DB_DATABASE'),
+        host: env.get('DB_HOST'),
+        port: env.get('DB_PORT'),
+        user: env.get('DB_USER'),
+        password: env.get('DB_PASSWORD', ''),
+        database: env.get('DB_DATABASE'),
       },
       migrations: {
         naturalSort: true,
@@ -70,33 +41,24 @@ const databaseConfig: DatabaseConfig = {
       debug: false,
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | PostgreSQL config
-    |--------------------------------------------------------------------------
-    |
-    | Configuration for PostgreSQL database. Make sure to install the driver
-    | from npm when using this connection
-    |
-    | npm i pg
-    |
-    */
-    pg: {
-      client: 'pg',
+    sqlite: {
+      client: 'sqlite',
       connection: {
-        host: Env.get('DB_HOST'),
-        port: Env.get('DB_PORT'),
-        user: Env.get('DB_USER'),
-        password: Env.get('DB_PASSWORD', ''),
-        database: Env.get('DB_DATABASE'),
+        filename: './tmp/db.sqlite3',
+      },
+      pool: {
+        afterCreate: (conn, cb) => {
+          conn.run('PRAGMA foreign_keys=true', cb)
+        }
       },
       migrations: {
         naturalSort: true,
       },
+      useNullAsDefault: true,
       healthCheck: false,
       debug: false,
     },
   },
-}
+})
 
 export default databaseConfig

@@ -1,5 +1,4 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import hash from '@adonisjs/core/services/hash'
 import User from '#models/user'
 import vine from '@vinejs/vine'
 
@@ -58,19 +57,7 @@ export default class AuthController {
     try {
       const { email, password } = await request.validateUsing(loginValidator)
 
-      const user = await User.findBy('email', email)
-
-      if (!user) {
-        return response.status(401).json({
-          message: 'Invalid credentials',
-        })
-      }
-
-      if (!(await hash.verify(user.password, password))) {
-        return response.status(401).json({
-          message: 'Invalid credentials',
-        })
-      }
+      const user = await User.verifyCredentials(email, password)
 
       if (user.status !== 'active') {
         return response.status(401).json({
@@ -78,7 +65,7 @@ export default class AuthController {
         })
       }
 
-      const token = await auth.use('api').generate(user)
+      const token = await User.accessTokens.create(user)
 
       return response.json({
         message: 'Login successful',
@@ -89,7 +76,7 @@ export default class AuthController {
           role: user.role,
           status: user.status,
         },
-        token: token,
+        token: token.value!.release(),
       })
     } catch (error) {
       return response.status(400).json({
@@ -101,7 +88,8 @@ export default class AuthController {
 
   public async logout({ auth, response }: HttpContext) {
     try {
-      await auth.use('api').revoke()
+      const user = auth.getUserOrFail()
+      await User.accessTokens.delete(user, user.currentAccessToken.identifier)
       return response.json({
         message: 'Logout successful',
       })
@@ -114,7 +102,7 @@ export default class AuthController {
 
   public async me({ auth, response }: HttpContext) {
     try {
-      const user = auth.user!
+      const user = auth.getUserOrFail()
       return response.json({
         user: {
           id: user.id,

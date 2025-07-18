@@ -1,11 +1,22 @@
 import { DateTime } from 'luxon'
 import hash from '@adonisjs/core/services/hash'
-import { column, beforeSave, BaseModel, hasMany, HasMany } from '@adonisjs/lucid/orm'
+import { compose } from '@adonisjs/core/helpers'
+import { BaseModel, column, beforeSave, hasMany } from '@adonisjs/lucid/orm'
+import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
+import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 import MedicationRequest from './medication_request.js'
 import Product from './product.js'
 import Beneficiary from './beneficiary.js'
 
-export default class User extends BaseModel {
+const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
+  uids: ['email'],
+  passwordColumnName: 'password',
+})
+
+export default class User extends compose(BaseModel, AuthFinder) {
+  static accessTokens = DbAccessTokensProvider.forModel(User)
+
   @column({ isPrimary: true })
   public id: number
 

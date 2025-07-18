@@ -18,16 +18,35 @@ The only requirement is having Node.js & npm installed - [install with nvm](http
 Follow these steps:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 1: Install frontend dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Set up backend
+cd cross_shield_backend
+npm install
 
-# Step 3: Install the necessary dependencies.
+# Step 3: Set up your MySQL database
+# Create a database named 'cross_shield' in MySQL Workbench
+# Update the .env file with your MySQL credentials
+
+# Step 4: Set up the backend
+cd cross_shield_backend
 npm i
+cp .env.example .env
+node ace migration:run
+node ace db:seed
+npm run dev
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 5: In a new terminal, start the frontend
+# Step 4: Run database migrations and seed data
+node ace migration:run
+node ace db:seed
+
+# Step 5: Start the backend server
+npm run dev
+
+# Step 6: In a new terminal, start the frontend (from root directory)
+cd ..
 npm run dev
 ```
 

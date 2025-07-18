@@ -15,8 +15,6 @@ export default class extends BaseSchema {
       table.string('location', 255).nullable()
       table.string('license_number', 100).nullable() // For health practitioners
       table.string('business_name', 255).nullable() // For suppliers
-      table.string('remember_me_token').nullable()
-      table.timestamp('email_verified_at', { useTz: true }).nullable()
       table.timestamp('created_at', { useTz: true }).notNullable()
       table.timestamp('updated_at', { useTz: true }).notNullable()
     })
