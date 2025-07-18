@@ -6,6 +6,12 @@ import Product from './Product'
 import Beneficiary from './Beneficiary'
 
 export default class User extends BaseModel {
+  static create(arg0: any) {
+    throw new Error('Method not implemented.')
+  }
+  static findBy(arg0: string, email: any) {
+    throw new Error('Method not implemented.')
+  }
   @column({ isPrimary: true })
   public id: number
 

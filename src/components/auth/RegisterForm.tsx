@@ -71,12 +71,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
+    <div className="w-full max-w-md mx-auto my-6">
+    <Card className="w-full -my-8">
+    <CardHeader>
         <CardTitle className="text-2xl text-center">Join Cross Shield</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <div>
             <Label htmlFor="fullName">Full Name</Label>
             <Input
@@ -222,5 +223,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 };

@@ -9,26 +9,24 @@ export default class BeneficiariesController {
       let beneficiaries
 
       if (user.role === 'super_admin') {
-        beneficiaries = await Beneficiary.query()
-          .preload('diaspora')
-          .orderBy('created_at', 'desc')
+        beneficiaries = await Beneficiary.query().preload('diaspora').orderBy('created_at', 'desc')
       } else if (user.role === 'diaspora') {
         beneficiaries = await Beneficiary.query()
           .where('diaspora_id', user.id)
           .orderBy('created_at', 'desc')
       } else {
         return response.status(403).json({
-          message: 'Unauthorized to view beneficiaries'
+          message: 'Unauthorized to view beneficiaries',
         })
       }
 
       return response.json({
-        beneficiaries
+        beneficiaries,
       })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch beneficiaries',
-        error: error.message.errors
+        error: error.message.errors,
       })
     }
   }
@@ -47,26 +45,26 @@ export default class BeneficiariesController {
 
       if (user.role !== 'diaspora') {
         return response.status(403).json({
-          message: 'Only diaspora users can create beneficiaries'
+          message: 'Only diaspora users can create beneficiaries',
         })
       }
 
       const beneficiary = await Beneficiary.create({
         ...payload,
         diasporaId: user.id,
-        status: 'active'
+        status: 'active',
       })
 
       await beneficiary.load('diaspora')
 
       return response.status(201).json({
         message: 'Beneficiary created successfully',
-        beneficiary
+        beneficiary,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to create beneficiary',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -82,16 +80,16 @@ export default class BeneficiariesController {
       // Check authorization
       if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to view this beneficiary'
+          message: 'Unauthorized to view this beneficiary',
         })
       }
 
       return response.json({
-        beneficiary
+        beneficiary,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Beneficiary not found'
+        message: 'Beneficiary not found',
       })
     }
   }
@@ -108,13 +106,13 @@ export default class BeneficiariesController {
     try {
       const payload = await request.validate({ schema: updateSchema })
       const user = auth.user!
-      
+
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
       // Check authorization
       if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to update this beneficiary'
+          message: 'Unauthorized to update this beneficiary',
         })
       }
 
@@ -125,12 +123,12 @@ export default class BeneficiariesController {
 
       return response.json({
         message: 'Beneficiary updated successfully',
-        beneficiary
+        beneficiary,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to update beneficiary',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -143,18 +141,18 @@ export default class BeneficiariesController {
       // Check authorization
       if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to delete this beneficiary'
+          message: 'Unauthorized to delete this beneficiary',
         })
       }
 
       await beneficiary.delete()
 
       return response.json({
-        message: 'Beneficiary deleted successfully'
+        message: 'Beneficiary deleted successfully',
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Beneficiary not found'
+        message: 'Beneficiary not found',
       })
     }
   }

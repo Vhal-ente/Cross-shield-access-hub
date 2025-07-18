@@ -10,13 +10,9 @@ export default class ProductsController {
       let products
 
       if (user.role === 'super_admin') {
-        products = await Product.query()
-          .preload('supplier')
-          .orderBy('created_at', 'desc')
+        products = await Product.query().preload('supplier').orderBy('created_at', 'desc')
       } else if (user.role === 'supplier') {
-        products = await Product.query()
-          .where('supplier_id', user.id)
-          .orderBy('created_at', 'desc')
+        products = await Product.query().where('supplier_id', user.id).orderBy('created_at', 'desc')
       } else {
         products = await Product.query()
           .where('status', 'approved')
@@ -25,12 +21,12 @@ export default class ProductsController {
       }
 
       return response.json({
-        products
+        products,
       })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch products',
-        error: error.message.errors
+        error: error.message.errors,
       })
     }
   }
@@ -51,43 +47,40 @@ export default class ProductsController {
 
       if (user.role !== 'supplier') {
         return response.status(403).json({
-          message: 'Only suppliers can create products'
+          message: 'Only suppliers can create products',
         })
       }
 
       const product = await Product.create({
         ...payload,
         supplierId: user.id,
-        status: 'pending'
+        status: 'pending',
       })
 
       await product.load('supplier')
 
       return response.status(201).json({
         message: 'Product created successfully',
-        product
+        product,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to create product',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
 
   public async show({ params, response }: HttpContextContract) {
     try {
-      const product = await Product.query()
-        .where('id', params.id)
-        .preload('supplier')
-        .firstOrFail()
+      const product = await Product.query().where('id', params.id).preload('supplier').firstOrFail()
 
       return response.json({
-        product
+        product,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Product not found'
+        message: 'Product not found',
       })
     }
   }
@@ -106,13 +99,13 @@ export default class ProductsController {
     try {
       const payload = await request.validate({ schema: updateSchema })
       const user = auth.user!
-      
+
       const product = await Product.findOrFail(params.id)
 
       // Check authorization
       if (user.role !== 'super_admin' && product.supplierId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to update this product'
+          message: 'Unauthorized to update this product',
         })
       }
 
@@ -123,12 +116,12 @@ export default class ProductsController {
 
       return response.json({
         message: 'Product updated successfully',
-        product
+        product,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to update product',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -141,18 +134,18 @@ export default class ProductsController {
       // Check authorization
       if (user.role !== 'super_admin' && product.supplierId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to delete this product'
+          message: 'Unauthorized to delete this product',
         })
       }
 
       await product.delete()
 
       return response.json({
-        message: 'Product deleted successfully'
+        message: 'Product deleted successfully',
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Product not found'
+        message: 'Product not found',
       })
     }
   }
@@ -163,7 +156,7 @@ export default class ProductsController {
 
       if (user.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can approve products'
+          message: 'Only super admin can approve products',
         })
       }
 
@@ -175,11 +168,11 @@ export default class ProductsController {
 
       return response.json({
         message: 'Product approved successfully',
-        product
+        product,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Product not found'
+        message: 'Product not found',
       })
     }
   }
@@ -190,7 +183,7 @@ export default class ProductsController {
 
       if (user.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can reject products'
+          message: 'Only super admin can reject products',
         })
       }
 
@@ -202,11 +195,11 @@ export default class ProductsController {
 
       return response.json({
         message: 'Product rejected successfully',
-        product
+        product,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Product not found'
+        message: 'Product not found',
       })
     }
   }

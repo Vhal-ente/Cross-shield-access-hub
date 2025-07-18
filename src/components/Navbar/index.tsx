@@ -15,13 +15,17 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '#home' },
     { name: 'About us', path: '#about' },
-    // { name: 'Products', path: '#products' },
     { name: 'Testimonials', path: '#testimonials' },
     { name: 'Support', path: '#support' },
   ];
 
-  const handleAuthClick = (mode: 'login' | 'register') => {
-    setAuthMode(mode);
+  const handleLoginClick = () => {
+    setAuthMode('login');
+    setAuthModalOpen(true);
+  };
+
+  const handleRegisterClick = () => {
+    setAuthMode('register');
     setAuthModalOpen(true);
   };
 
@@ -36,7 +40,7 @@ const Navbar = () => {
   return (
     <>
       <header className="w-full bg-white shadow-sm fixed top-0 left-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           {/* Logo */}
           <div className="border border-none p-1">
             <img src={CrossShield} alt="Cross Shield Logo" className="h-14 w-auto" />
@@ -78,17 +82,12 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAuthClick('login')}
-                >
+                <Button variant="outline" size="sm" onClick={handleLoginClick}>
                   Login
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleAuthClick('register')}
-                >
+                <Button 
+                className='bg-[#106FB2] hover:bg-[#106FB2]'
+                size="sm" onClick={handleRegisterClick}>
                   Register
                 </Button>
               </div>
@@ -123,7 +122,7 @@ const Navbar = () => {
                   </a>
                 ))}
               </div>
-              
+
               {/* Auth Buttons - Mobile */}
               <div className="flex flex-col space-y-2 pt-4 border-t">
                 {isAuthenticated ? (
@@ -148,15 +147,15 @@ const Navbar = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAuthClick('login')}
+                      onClick={handleLoginClick}
                       className="w-full"
                     >
                       Login
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => handleAuthClick('register')}
-                      className="w-full"
+                      onClick={handleRegisterClick}
+                      className="w-full bg-[#106FB2] hover:bg-[#106FB2]"
                     >
                       Register
                     </Button>
@@ -168,7 +167,8 @@ const Navbar = () => {
         )}
       </header>
 
-      <AuthModal 
+      {/* Auth Modal */}
+      <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         defaultMode={authMode}

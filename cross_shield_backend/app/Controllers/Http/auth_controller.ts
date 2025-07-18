@@ -18,10 +18,10 @@ export default class AuthController {
 
     try {
       const payload = await request.validate({ schema: registerSchema })
-      
+
       const user = await User.create({
         ...payload,
-        status: 'pending'
+        status: 'pending',
       })
 
       return response.status(201).json({
@@ -31,13 +31,13 @@ export default class AuthController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          status: user.status
-        }
+          status: user.status,
+        },
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Registration failed',
-        errors: error.messages.erros || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -50,24 +50,24 @@ export default class AuthController {
 
     try {
       const { email, password } = await request.validate({ schema: loginSchema })
-      
+
       const user = await User.findBy('email', email)
-      
+
       if (!user) {
         return response.status(401).json({
-          message: 'Invalid credentials'
+          message: 'Invalid credentials',
         })
       }
 
       if (!(await Hash.verify(user.password, password))) {
         return response.status(401).json({
-          message: 'Invalid credentials'
+          message: 'Invalid credentials',
         })
       }
 
       if (user.status !== 'active') {
         return response.status(401).json({
-          message: 'Account is not active. Please contact administrator.'
+          message: 'Account is not active. Please contact administrator.',
         })
       }
 
@@ -80,14 +80,14 @@ export default class AuthController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          status: user.status
+          status: user.status,
         },
-        token: token.token
+        token: token.token,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Login failed',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -96,11 +96,11 @@ export default class AuthController {
     try {
       await auth.use('api').revoke()
       return response.json({
-        message: 'Logout successful'
+        message: 'Logout successful',
       })
     } catch (error) {
       return response.status(500).json({
-        message: 'Logout failed'
+        message: 'Logout failed',
       })
     }
   }
@@ -117,12 +117,12 @@ export default class AuthController {
           status: user.status,
           location: user.location,
           licenseNumber: user.licenseNumber,
-          businessName: user.businessName
-        }
+          businessName: user.businessName,
+        },
       })
     } catch (error) {
       return response.status(401).json({
-        message: 'Unauthorized'
+        message: 'Unauthorized',
       })
     }
   }

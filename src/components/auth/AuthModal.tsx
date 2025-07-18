@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
@@ -15,6 +15,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   defaultMode = 'login' 
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
+
+  useEffect(() => {
+    setMode(defaultMode);
+  }, [defaultMode]);
 
   const handleSuccess = () => {
     onClose();

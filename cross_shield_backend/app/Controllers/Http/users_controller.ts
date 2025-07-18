@@ -9,21 +9,32 @@ export default class UsersController {
 
       if (user.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can view all users'
+          message: 'Only super admin can view all users',
         })
       }
 
       const users = await User.query()
-        .select('id', 'full_name', 'email', 'phone', 'role', 'status', 'location', 'license_number', 'business_name', 'created_at')
+        .select(
+          'id',
+          'full_name',
+          'email',
+          'phone',
+          'role',
+          'status',
+          'location',
+          'license_number',
+          'business_name',
+          'created_at'
+        )
         .orderBy('created_at', 'desc')
 
       return response.json({
-        users
+        users,
       })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch users',
-        error: error.message.errors
+        error: error.message.errors,
       })
     }
   }
@@ -32,23 +43,34 @@ export default class UsersController {
     try {
       const currentUser = auth.user!
       const user = await User.query()
-        .select('id', 'full_name', 'email', 'phone', 'role', 'status', 'location', 'license_number', 'business_name', 'created_at')
+        .select(
+          'id',
+          'full_name',
+          'email',
+          'phone',
+          'role',
+          'status',
+          'location',
+          'license_number',
+          'business_name',
+          'created_at'
+        )
         .where('id', params.id)
         .firstOrFail()
 
       // Check authorization
       if (currentUser.role !== 'super_admin' && currentUser.id !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to view this user'
+          message: 'Unauthorized to view this user',
         })
       }
 
       return response.json({
-        user
+        user,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'User not found'
+        message: 'User not found',
       })
     }
   }
@@ -66,13 +88,13 @@ export default class UsersController {
     try {
       const payload = await request.validate({ schema: updateSchema })
       const currentUser = auth.user!
-      
+
       const user = await User.findOrFail(params.id)
 
       // Check authorization
       if (currentUser.role !== 'super_admin' && currentUser.id !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to update this user'
+          message: 'Unauthorized to update this user',
         })
       }
 
@@ -95,13 +117,13 @@ export default class UsersController {
           status: user.status,
           location: user.location,
           licenseNumber: user.licenseNumber,
-          businessName: user.businessName
-        }
+          businessName: user.businessName,
+        },
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to update user',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -112,7 +134,7 @@ export default class UsersController {
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can approve users'
+          message: 'Only super admin can approve users',
         })
       }
 
@@ -127,12 +149,12 @@ export default class UsersController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          status: user.status
-        }
+          status: user.status,
+        },
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'User not found'
+        message: 'User not found',
       })
     }
   }
@@ -143,7 +165,7 @@ export default class UsersController {
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can suspend users'
+          message: 'Only super admin can suspend users',
         })
       }
 
@@ -158,12 +180,12 @@ export default class UsersController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          status: user.status
-        }
+          status: user.status,
+        },
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'User not found'
+        message: 'User not found',
       })
     }
   }
@@ -174,7 +196,7 @@ export default class UsersController {
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
-          message: 'Only super admin can delete users'
+          message: 'Only super admin can delete users',
         })
       }
 
@@ -182,11 +204,11 @@ export default class UsersController {
       await user.delete()
 
       return response.json({
-        message: 'User deleted successfully'
+        message: 'User deleted successfully',
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'User not found'
+        message: 'User not found',
       })
     }
   }

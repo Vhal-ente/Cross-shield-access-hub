@@ -30,12 +30,12 @@ export default class MedicationRequestsController {
       }
 
       return response.json({
-        requests
+        requests,
       })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch requests',
-        error: error.message.errors
+        error: error.message.errors,
       })
     }
   }
@@ -57,7 +57,7 @@ export default class MedicationRequestsController {
       const medicationRequest = await MedicationRequest.create({
         ...payload,
         userId: user.id,
-        status: 'pending'
+        status: 'pending',
       })
 
       await medicationRequest.load('user')
@@ -65,12 +65,12 @@ export default class MedicationRequestsController {
 
       return response.status(201).json({
         message: 'Medication request created successfully',
-        request: medicationRequest
+        request: medicationRequest,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to create request',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -86,20 +86,22 @@ export default class MedicationRequestsController {
         .firstOrFail()
 
       // Check authorization
-      if (user.role !== 'super_admin' && 
-          request.userId !== user.id && 
-          request.assignedTo !== user.id) {
+      if (
+        user.role !== 'super_admin' &&
+        request.userId !== user.id &&
+        request.assignedTo !== user.id
+      ) {
         return response.status(403).json({
-          message: 'Unauthorized to view this request'
+          message: 'Unauthorized to view this request',
         })
       }
 
       return response.json({
-        request
+        request,
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Request not found'
+        message: 'Request not found',
       })
     }
   }
@@ -115,15 +117,17 @@ export default class MedicationRequestsController {
     try {
       const payload = await request.validate({ schema: updateSchema })
       const user = auth.user!
-      
+
       const medicationRequest = await MedicationRequest.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && 
-          user.role !== 'health_practitioner' &&
-          medicationRequest.userId !== user.id) {
+      if (
+        user.role !== 'super_admin' &&
+        user.role !== 'health_practitioner' &&
+        medicationRequest.userId !== user.id
+      ) {
         return response.status(403).json({
-          message: 'Unauthorized to update this request'
+          message: 'Unauthorized to update this request',
         })
       }
 
@@ -136,12 +140,12 @@ export default class MedicationRequestsController {
 
       return response.json({
         message: 'Request updated successfully',
-        request: medicationRequest
+        request: medicationRequest,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Failed to update request',
-        errors: error.messages.errors || error.message.errors
+        errors: error.messages.errors || error.message.errors,
       })
     }
   }
@@ -154,18 +158,18 @@ export default class MedicationRequestsController {
       // Check authorization
       if (user.role !== 'super_admin' && medicationRequest.userId !== user.id) {
         return response.status(403).json({
-          message: 'Unauthorized to delete this request'
+          message: 'Unauthorized to delete this request',
         })
       }
 
       await medicationRequest.delete()
 
       return response.json({
-        message: 'Request deleted successfully'
+        message: 'Request deleted successfully',
       })
     } catch (error) {
       return response.status(404).json({
-        message: 'Request not found'
+        message: 'Request not found',
       })
     }
   }
