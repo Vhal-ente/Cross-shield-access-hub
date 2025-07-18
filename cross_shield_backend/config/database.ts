@@ -11,7 +11,7 @@ const databaseConfig: DatabaseConfig = {
   | the Query Builder.
   |
   */
-  connection: Env.get('DB_CONNECTION'),
+  connection: Env.get('DB_CONNECTION', 'sqlite'),
 
   connections: {
     /*

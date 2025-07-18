@@ -1,23 +1,28 @@
-import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import Hash from '@ioc:Adonis/Core/Hash'
-import User from 'App/Models/User'
-import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import type { HttpContext } from '@adonisjs/core/http'
+import hash from '@adonisjs/core/services/hash'
+import User from '#models/user'
+import vine from '@vinejs/vine'
 
 export default class AuthController {
-  public async register({ request, response }: HttpContextContract) {
-    const registerSchema = schema.create({
-      fullName: schema.string({}, [rules.required()]),
-      email: schema.string({}, [rules.email(), rules.unique({ table: 'users', column: 'email' })]),
-      phone: schema.string({}, [rules.required()]),
-      password: schema.string({}, [rules.minLength(6)]),
-      role: schema.enum(['health_practitioner', 'supplier', 'diaspora', 'beneficiary'] as const),
-      location: schema.string.optional(),
-      licenseNumber: schema.string.optional(),
-      businessName: schema.string.optional(),
-    })
+  public async register({ request, response }: HttpContext) {
+    const registerValidator = vine.compile(
+      vine.object({
+        fullName: vine.string(),
+        email: vine.string().email().unique(async (db, value) => {
+          const user = await db.from('users').where('email', value).first()
+          return !user
+        }),
+        phone: vine.string(),
+        password: vine.string().minLength(6),
+        role: vine.enum(['health_practitioner', 'supplier', 'diaspora', 'beneficiary']),
+        location: vine.string().optional(),
+        licenseNumber: vine.string().optional(),
+        businessName: vine.string().optional(),
+      })
+    )
 
     try {
-      const payload = await request.validate({ schema: registerSchema })
+      const payload = await request.validateUsing(registerValidator)
 
       const user = await User.create({
         ...payload,
@@ -37,19 +42,21 @@ export default class AuthController {
     } catch (error) {
       return response.status(400).json({
         message: 'Registration failed',
-        errors: error.messages.errors || error.message.errors,
+        errors: error.messages || error.message,
       })
     }
   }
 
-  public async login({ request, response, auth }: HttpContextContract) {
-    const loginSchema = schema.create({
-      email: schema.string({}, [rules.email()]),
-      password: schema.string({}, [rules.required()]),
-    })
+  public async login({ request, response, auth }: HttpContext) {
+    const loginValidator = vine.compile(
+      vine.object({
+        email: vine.string().email(),
+        password: vine.string(),
+      })
+    )
 
     try {
-      const { email, password } = await request.validate({ schema: loginSchema })
+      const { email, password } = await request.validateUsing(loginValidator)
 
       const user = await User.findBy('email', email)
 
@@ -59,7 +66,7 @@ export default class AuthController {
         })
       }
 
-      if (!(await Hash.verify(user.password, password))) {
+      if (!(await hash.verify(user.password, password))) {
         return response.status(401).json({
           message: 'Invalid credentials',
         })
@@ -82,17 +89,17 @@ export default class AuthController {
           role: user.role,
           status: user.status,
         },
-        token: token.token,
+        token: token,
       })
     } catch (error) {
       return response.status(400).json({
         message: 'Login failed',
-        errors: error.messages.errors || error.message.errors,
+        errors: error.messages || error.message,
       })
     }
   }
 
-  public async logout({ auth, response }: HttpContextContract) {
+  public async logout({ auth, response }: HttpContext) {
     try {
       await auth.use('api').revoke()
       return response.json({
@@ -105,7 +112,7 @@ export default class AuthController {
     }
   }
 
-  public async me({ auth, response }: HttpContextContract) {
+  public async me({ auth, response }: HttpContext) {
     try {
       const user = auth.user!
       return response.json({

@@ -29,10 +29,10 @@ router.get('/health', async () => {
 // Auth routes
 router
   .group(() => {
-    router.post('/register', 'AuthController.register')
-    router.post('/login', 'AuthController.login')
-    router.post('/logout', 'AuthController.logout').use('auth')
-    router.get('/me', 'AuthController.me').use('auth')
+    router.post('/register', '#controllers/http/auth_controller.register')
+    router.post('/login', '#controllers/http/auth_controller.login')
+    router.post('/logout', '#controllers/http/auth_controller.logout').middleware('auth')
+    router.get('/me', '#controllers/http/auth_controller.me').middleware('auth')
   })
   .prefix('/api/auth')
 
@@ -40,23 +40,23 @@ router
 router
   .group(() => {
     // Medication requests
-    router.resource('medication-requests', 'MedicationRequestsController').apiOnly()
+    router.resource('medication-requests', '#controllers/http/medication_requests_controller')
 
     // Products
-    router.resource('products', 'ProductsController').apiOnly()
-    router.post('products/:id/approve', 'ProductsController.approve')
-    router.post('products/:id/reject', 'ProductsController.reject')
+    router.resource('products', '#controllers/http/products_controller')
+    router.post('products/:id/approve', '#controllers/http/products_controller.approve')
+    router.post('products/:id/reject', '#controllers/http/products_controller.reject')
 
     // Beneficiaries
-    router.resource('beneficiaries', 'BeneficiariesController').apiOnly()
+    router.resource('beneficiaries', '#controllers/http/beneficiaries_controller')
 
     // Users (admin only)
-    router.resource('users', 'UsersController').apiOnly().except(['store'])
-    router.post('users/:id/approve', 'UsersController.approve')
-    router.post('users/:id/suspend', 'UsersController.suspend')
+    router.resource('users', '#controllers/http/users_controller').except(['store'])
+    router.post('users/:id/approve', '#controllers/http/users_controller.approve')
+    router.post('users/:id/suspend', '#controllers/http/users_controller.suspend')
   })
   .prefix('/api')
-  .use('auth')
+  .middleware('auth')
 
 // File upload routes
 router

@@ -1,13 +1,12 @@
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3333/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3333/api";
 
 export interface User {
   id: number;
   fullName: string;
   email: string;
   phone: string;
-  role: "admin" | "healthcare" | "supplier" | "diaspora";
+  role: "super_admin" | "health_practitioner" | "supplier" | "diaspora" | "beneficiary";
   status: "active" | "suspended" | "pending";
   location?: string;
   licenseNumber?: string;

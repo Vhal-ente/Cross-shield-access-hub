@@ -1,17 +1,11 @@
 import { DateTime } from 'luxon'
-import Hash from '@ioc:Adonis/Core/Hash'
-import { column, beforeSave, BaseModel, hasMany, HasMany } from '@ioc:Adonis/Lucid/Orm'
-import MedicationRequest from './MedicationRequest'
-import Product from './Product'
-import Beneficiary from './Beneficiary'
+import hash from '@adonisjs/core/services/hash'
+import { column, beforeSave, BaseModel, hasMany, HasMany } from '@adonisjs/lucid/orm'
+import MedicationRequest from './medication_request.js'
+import Product from './product.js'
+import Beneficiary from './beneficiary.js'
 
 export default class User extends BaseModel {
-  static create(arg0: any) {
-    throw new Error('Method not implemented.')
-  }
-  static findBy(arg0: string, email: any) {
-    throw new Error('Method not implemented.')
-  }
   @column({ isPrimary: true })
   public id: number
 
@@ -57,7 +51,7 @@ export default class User extends BaseModel {
   @beforeSave()
   public static async hashPassword(user: User) {
     if (user.$dirty.password) {
-      user.password = await Hash.make(user.password)
+      user.password = await hash.make(user.password)
     }
   }
 
