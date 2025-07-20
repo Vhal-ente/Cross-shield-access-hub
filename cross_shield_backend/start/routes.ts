@@ -2,7 +2,7 @@
 |--------------------------------------------------------------------------
 | Routes file
 |--------------------------------------------------------------------------
-|
+
 | The routes file is used for defining the HTTP routes.
 |
 */
@@ -31,8 +31,9 @@ router
   .group(() => {
     router.post('/register', '#controllers/http/auth_controller.register')
     router.post('/login', '#controllers/http/auth_controller.login')
-    router.post('/logout', '#controllers/http/auth_controller.logout').middleware('auth')
-    router.get('/me', '#controllers/http/auth_controller.me').middleware('auth')
+
+    router.post('/logout', '#controllers/http/auth_controller.logout').middleware(['auth'])
+    router.get('/me', '#controllers/http/auth_controller.me').middleware(['auth'])
   })
   .prefix('/api/auth')
 
@@ -56,7 +57,7 @@ router
     router.post('users/:id/suspend', '#controllers/http/users_controller.suspend')
   })
   .prefix('/api')
-  .middleware('auth')
+  .middleware(['auth'])
 
 // File upload routes
 router

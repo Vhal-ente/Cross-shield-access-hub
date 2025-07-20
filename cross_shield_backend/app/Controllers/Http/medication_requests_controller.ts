@@ -1,11 +1,15 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import MedicationRequest from '#models/medication_request'
-import vine from '@vinejs/vine'
+import User from '#models/user'
+import {
+  createMedicationRequestValidator,
+  updateMedicationRequestValidator,
+} from '#validators/medication_request'
 
 export default class MedicationRequestsController {
-  public async index({ auth, response }: HttpContext) {
+  public async index({ response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       let requests
 
       if (user.role === 'super_admin') {
@@ -35,24 +39,15 @@ export default class MedicationRequestsController {
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch requests',
-        error: error.message.errors,
+        error: error.message,
       })
     }
   }
 
-  public async store({ request, response, auth }: HttpContext) {
-    const requestValidator = vine.compile(vine.object({
-      medicationName: vine.string(),
-      quantity: vine.number().positive(),
-      urgency: vine.enum(['normal', 'urgent', 'emergency']),
-      medicalCondition: vine.string().optional(),
-      notes: vine.string().optional(),
-      beneficiaryId: vine.number().positive().optional(),
-    }))
-
+  public async store({ request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(requestValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(createMedicationRequestValidator)
+      const user = (response as any).locals.user as User
 
       const medicationRequest = await MedicationRequest.create({
         ...payload,
@@ -75,9 +70,9 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async show({ params, response, auth }: HttpContext) {
+  public async show({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       const request = await MedicationRequest.query()
         .where('id', params.id)
         .preload('user')
@@ -106,17 +101,10 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async update({ params, request, response, auth }: HttpContext) {
-    const updateValidator = vine.compile(vine.object({
-      status: vine.enum(['pending', 'in_progress', 'fulfilled', 'cancelled']).optional(),
-      assignedTo: vine.number().positive().optional(),
-      price: vine.number().positive().optional(),
-      notes: vine.string().optional(),
-    }))
-
+  public async update({ params, request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(updateValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(updateMedicationRequestValidator)
+      const user = (response as any).locals.user as User
 
       const medicationRequest = await MedicationRequest.findOrFail(params.id)
 
@@ -150,9 +138,9 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async destroy({ params, response, auth }: HttpContext) {
+  public async destroy({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       const medicationRequest = await MedicationRequest.findOrFail(params.id)
 
       // Check authorization

@@ -13,7 +13,7 @@ export default class extends BaseSeeder {
         password: 'password123',
         role: 'super_admin',
         status: 'active',
-        location: 'Lagos, Nigeria'
+        location: 'Lagos, Nigeria',
       }
     )
 
@@ -28,7 +28,7 @@ export default class extends BaseSeeder {
         role: 'health_practitioner',
         status: 'active',
         location: 'Lagos, Nigeria',
-        licenseNumber: 'MED-12345'
+        licenseNumber: 'MED-12345',
       }
     )
 
@@ -43,7 +43,7 @@ export default class extends BaseSeeder {
         role: 'supplier',
         status: 'active',
         location: 'Abuja, Nigeria',
-        businessName: 'MediSupply Limited'
+        businessName: 'MediSupply Limited',
       }
     )
 
@@ -57,7 +57,7 @@ export default class extends BaseSeeder {
         password: 'password123',
         role: 'diaspora',
         status: 'active',
-        location: 'New York, USA'
+        location: 'New York, USA',
       }
     )
   }

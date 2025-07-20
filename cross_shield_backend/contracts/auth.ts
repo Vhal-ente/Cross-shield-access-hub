@@ -5,6 +5,17 @@
  * file.
  */
 
+import {
+  OATGuardContract,
+  OATGuardConfig,
+  SessionClientContract,
+  OATClientContract,
+  SessionGuardContract,
+  SessionGuardConfig, // Added import for SessionGuardConfig
+  LucidProviderContract,
+} from '@ioc:Adonis/Addons/Auth'
+import { LucidProviderConfig } from '@ioc:Adonis/Addons/Auth' // Add this import
+
 declare module '@ioc:Adonis/Addons/Auth' {
   /*
   |--------------------------------------------------------------------------
@@ -18,22 +29,23 @@ declare module '@ioc:Adonis/Addons/Auth' {
   | You can also create and register your own custom providers.
   |
   */
+
   interface ProvidersList {
     /*
-    |--------------------------------------------------------------------------
-    | User Provider
-    |--------------------------------------------------------------------------
-    |
-    | The following provider uses Lucid models as a driver for fetching user
-    | details from the database for authentication.
-    |
-    | You can create multiple providers using the same underlying driver with
-    | different Lucid models.
-    |
-    */
+      |--------------------------------------------------------------------------
+      | User Provider
+      |--------------------------------------------------------------------------
+      |
+      | The following provider uses Lucid models as a driver for fetching user
+      | details from the database for authentication.
+      |
+      | You can create multiple providers using the same underlying driver with
+      | different Lucid models.
+      |
+      */
     user: {
-      implementation: LucidProviderContract<typeof import('App/Models/User')>
-      config: LucidProviderConfig<typeof import('App/Models/User')>
+      implementation: LucidProviderContract<typeof import('app/models/user.js')>
+      config: LucidProviderConfig<typeof import('app/models/user.js')>
     }
   }
 

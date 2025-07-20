@@ -1,13 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
-import vine from '@vinejs/vine'
+import { updateUserValidator } from '#validators/user'
 
 export default class UsersController {
-  public async index({ response, auth }: HttpContext) {
+  public async index({ response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const currentUser = (response as any).locals.user as User
 
-      if (user.role !== 'super_admin') {
+      if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can view all users',
         })
@@ -34,14 +34,14 @@ export default class UsersController {
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch users',
-        error: error.message.errors,
+        error: error.message,
       })
     }
   }
 
-  public async show({ params, response, auth }: HttpContext) {
+  public async show({ params, response }: HttpContext) {
     try {
-      const currentUser = auth.getUserOrFail()
+      const currentUser = (response as any).locals.user as User
       const user = await User.query()
         .select(
           'id',
@@ -75,19 +75,10 @@ export default class UsersController {
     }
   }
 
-  public async update({ params, request, response, auth }: HttpContext) {
-    const updateValidator = vine.compile(vine.object({
-      fullName: vine.string().optional(),
-      phone: vine.string().optional(),
-      location: vine.string().optional(),
-      licenseNumber: vine.string().optional(),
-      businessName: vine.string().optional(),
-      status: vine.enum(['active', 'pending', 'suspended']).optional(),
-    }))
-
+  public async update({ params, request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(updateValidator)
-      const currentUser = auth.getUserOrFail()
+      const payload = await request.validateUsing(updateUserValidator)
+      const currentUser = (response as any).locals.user as User
 
       const user = await User.findOrFail(params.id)
 
@@ -128,9 +119,9 @@ export default class UsersController {
     }
   }
 
-  public async approve({ params, response, auth }: HttpContext) {
+  public async approve({ params, response }: HttpContext) {
     try {
-      const currentUser = auth.getUserOrFail()
+      const currentUser = (response as any).locals.user as User
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
@@ -159,9 +150,9 @@ export default class UsersController {
     }
   }
 
-  public async suspend({ params, response, auth }: HttpContext) {
+  public async suspend({ params, response }: HttpContext) {
     try {
-      const currentUser = auth.getUserOrFail()
+      const currentUser = (response as any).locals.user as User
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({
@@ -190,9 +181,9 @@ export default class UsersController {
     }
   }
 
-  public async destroy({ params, response, auth }: HttpContext) {
+  public async destroy({ params, response }: HttpContext) {
     try {
-      const currentUser = auth.getUserOrFail()
+      const currentUser = (response as any).locals.user as User
 
       if (currentUser.role !== 'super_admin') {
         return response.status(403).json({

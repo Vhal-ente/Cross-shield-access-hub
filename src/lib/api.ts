@@ -49,10 +49,19 @@ async function request<T>(
     },
     ...options
   };
+  // Add these debug logs
+  console.log('Making request to:', url);
+  console.log('Request config:', config);
+  if (options.body) {
+    console.log('Request body:', options.body);
+  }
 
   const response = await fetch(url, config);
+    // Add this debug log
+    console.log('Response status:', response.status);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.log('Error response data:', errorData); // Add this
     throw new Error(
       errorData.message || `HTTP error! status: ${response.status}`
     );

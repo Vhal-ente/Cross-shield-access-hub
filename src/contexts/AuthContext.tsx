@@ -17,7 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>;
+  register: (userData: any) => Promise<{ message: string; user: User; }>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -63,10 +63,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('AuthContext login called with:', { email, password: '***' });
       const response = await apiClient.login(email, password);
+      console.log('Login response:', response);
       setUser(response.user);
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Login failed in AuthContext:', error);
       throw error;
     }
   };

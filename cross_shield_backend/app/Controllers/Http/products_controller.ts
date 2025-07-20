@@ -1,10 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
+import Product from '#models/product'
+import User from '#models/user'
+import { createProductValidator, updateProductValidator } from '#validators/product'
+import { DateTime } from 'luxon'
 
 export default class ProductsController {
-  public async index({ response, auth }: HttpContext) {
+  public async index({ response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       let products
 
       if (user.role === 'super_admin') {
@@ -24,24 +27,15 @@ export default class ProductsController {
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch products',
-        error: error.message.errors,
+        error: error.message,
       })
     }
   }
 
-  public async store({ request, response, auth }: HttpContext) {
-    const productValidator = vine.compile(vine.object({
-      name: vine.string(),
-      description: vine.string().optional(),
-      price: vine.number().positive(),
-      quantity: vine.number().positive(),
-      expiryDate: vine.date(),
-      nafdacNumber: vine.string().optional(),
-    }))
-
+  public async store({ request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(productValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(createProductValidator)
+      const user = (response as any).locals.user as User
 
       if (user.role !== 'supplier') {
         return response.status(403).json({
@@ -53,6 +47,7 @@ export default class ProductsController {
         ...payload,
         supplierId: user.id,
         status: 'pending',
+        expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
       })
 
       await product.load('supplier')
@@ -83,20 +78,10 @@ export default class ProductsController {
     }
   }
 
-  public async update({ params, request, response, auth }: HttpContext) {
-    const updateValidator = vine.compile(vine.object({
-      name: vine.string().optional(),
-      description: vine.string().optional(),
-      price: vine.number().positive().optional(),
-      quantity: vine.number().positive().optional(),
-      expiryDate: vine.date().optional(),
-      nafdacNumber: vine.string().optional(),
-      status: vine.enum(['pending', 'approved', 'rejected']).optional(),
-    }))
-
+  public async update({ params, request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(updateValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(updateProductValidator)
+      const user = (response as any).locals.user as User
 
       const product = await Product.findOrFail(params.id)
 
@@ -107,7 +92,10 @@ export default class ProductsController {
         })
       }
 
-      product.merge(payload)
+      product.merge({
+        ...payload,
+        expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
+      })
       await product.save()
 
       await product.load('supplier')
@@ -124,9 +112,9 @@ export default class ProductsController {
     }
   }
 
-  public async destroy({ params, response, auth }: HttpContext) {
+  public async destroy({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       const product = await Product.findOrFail(params.id)
 
       // Check authorization
@@ -148,9 +136,9 @@ export default class ProductsController {
     }
   }
 
-  public async approve({ params, response, auth }: HttpContext) {
+  public async approve({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
 
       if (user.role !== 'super_admin') {
         return response.status(403).json({
@@ -175,9 +163,9 @@ export default class ProductsController {
     }
   }
 
-  public async reject({ params, response, auth }: HttpContext) {
+  public async reject({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
 
       if (user.role !== 'super_admin') {
         return response.status(403).json({

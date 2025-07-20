@@ -13,18 +13,18 @@ const databaseConfig = defineConfig({
   */
   connection: env.get('DB_CONNECTION'),
 
-  connections: {
-    /*
-    |--------------------------------------------------------------------------
-    | MySQL config
-    |--------------------------------------------------------------------------
-    |
-    | Configuration for MySQL database. Make sure to install the driver
+  /*
+  |--------------------------------------------------------------------------
+  | MySQL config
+  |--------------------------------------------------------------------------
+  |
+  | Configuration for MySQL database. Make sure to install the driver
     | from npm when using this connection
     |
     | npm i mysql2
     |
     */
+  connections: {
     mysql: {
       client: 'mysql2',
       connection: {
@@ -37,8 +37,6 @@ const databaseConfig = defineConfig({
       migrations: {
         naturalSort: true,
       },
-      healthCheck: false,
-      debug: false,
     },
 
     sqlite: {
@@ -49,14 +47,12 @@ const databaseConfig = defineConfig({
       pool: {
         afterCreate: (conn, cb) => {
           conn.run('PRAGMA foreign_keys=true', cb)
-        }
+        },
       },
       migrations: {
         naturalSort: true,
       },
       useNullAsDefault: true,
-      healthCheck: false,
-      debug: false,
     },
   },
 })

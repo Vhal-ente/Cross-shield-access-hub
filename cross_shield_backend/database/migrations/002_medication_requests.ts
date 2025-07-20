@@ -14,7 +14,9 @@ export default class extends BaseSchema {
       table.text('medical_condition').nullable()
       table.text('notes').nullable()
       table.string('prescription_image', 255).nullable()
-      table.enum('status', ['pending', 'in_progress', 'fulfilled', 'cancelled']).defaultTo('pending')
+      table
+        .enum('status', ['pending', 'in_progress', 'fulfilled', 'cancelled'])
+        .defaultTo('pending')
       table.integer('assigned_to').unsigned().references('id').inTable('users').nullable()
       table.decimal('price', 10, 2).nullable()
       table.timestamp('created_at', { useTz: true }).notNullable()

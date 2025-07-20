@@ -1,11 +1,12 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Beneficiary from '#models/beneficiary'
-import vine from '@vinejs/vine'
+import User from '#models/user'
+import { createBeneficiaryValidator, updateBeneficiaryValidator } from '#validators/beneficiary'
 
 export default class BeneficiariesController {
-  public async index({ auth, response }: HttpContext) {
+  public async index({ response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       let beneficiaries
 
       if (user.role === 'super_admin') {
@@ -26,22 +27,15 @@ export default class BeneficiariesController {
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch beneficiaries',
-        error: error.message.errors,
+        error: error.message,
       })
     }
   }
 
-  public async store({ request, response, auth }: HttpContext) {
-    const beneficiaryValidator = vine.compile(vine.object({
-      name: vine.string(),
-      phone: vine.string(),
-      location: vine.string(),
-      medicationNeeds: vine.string().optional(),
-    }))
-
+  public async store({ request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(beneficiaryValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(createBeneficiaryValidator)
+      const user = (response as any).locals.user as User
 
       if (user.role !== 'diaspora') {
         return response.status(403).json({
@@ -69,9 +63,9 @@ export default class BeneficiariesController {
     }
   }
 
-  public async show({ params, response, auth }: HttpContext) {
+  public async show({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       const beneficiary = await Beneficiary.query()
         .where('id', params.id)
         .preload('diaspora')
@@ -94,18 +88,10 @@ export default class BeneficiariesController {
     }
   }
 
-  public async update({ params, request, response, auth }: HttpContext) {
-    const updateValidator = vine.compile(vine.object({
-      name: vine.string().optional(),
-      phone: vine.string().optional(),
-      location: vine.string().optional(),
-      medicationNeeds: vine.string().optional(),
-      status: vine.enum(['active', 'inactive']).optional(),
-    }))
-
+  public async update({ params, request, response }: HttpContext) {
     try {
-      const payload = await request.validateUsing(updateValidator)
-      const user = auth.getUserOrFail()
+      const payload = await request.validateUsing(updateBeneficiaryValidator)
+      const user = (response as any).locals.user as User
 
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
@@ -133,9 +119,9 @@ export default class BeneficiariesController {
     }
   }
 
-  public async destroy({ params, response, auth }: HttpContext) {
+  public async destroy({ params, response }: HttpContext) {
     try {
-      const user = auth.getUserOrFail()
+      const user = (response as any).locals.user as User
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
       // Check authorization

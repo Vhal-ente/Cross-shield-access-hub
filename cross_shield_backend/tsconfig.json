@@ -15,10 +15,11 @@
     "baseUrl": ".",
     "paths": {
       "@ioc:Adonis/*": ["./node_modules/@adonisjs/*/build/adonis-ioc.d.ts"],
+       "@ioc:Adonis/Addons/Auth": ["@adonisjs/auth/build/adonis-typings"],
       "App/*": ["./app/*"],
       "Config/*": ["./config/*"],
       "Database/*": ["./database/*"]
-    }
+    },
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", ]
 }

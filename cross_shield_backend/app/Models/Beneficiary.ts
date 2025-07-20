@@ -1,37 +1,38 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, BelongsTo } from '@adonisjs/lucid/orm'
+import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 
 export default class Beneficiary extends BaseModel {
   @column({ isPrimary: true })
-  public id: number
+  declare id: number
 
   @column()
-  public diasporaId: number
+  declare diasporaId: number
 
   @column()
-  public name: string
+  declare name: string
 
   @column()
-  public phone: string
+  declare phone: string
 
   @column()
-  public location: string
+  declare location: string
 
   @column()
-  public medicationNeeds: string | null
+  declare medicationNeeds: string | null
 
   @column()
-  public status: 'active' | 'inactive'
+  declare status: 'active' | 'inactive'
 
   @column.dateTime({ autoCreate: true })
-  public createdAt: DateTime
+  declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  public updatedAt: DateTime
+  declare updatedAt: DateTime
 
   @belongsTo(() => User, {
     foreignKey: 'diasporaId',
   })
-  public diaspora: BelongsTo<typeof User>
+  declare diaspora: BelongsTo<typeof User>
 }

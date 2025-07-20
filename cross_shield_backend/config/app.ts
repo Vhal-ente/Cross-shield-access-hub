@@ -1,9 +1,7 @@
 import proxyAddr from 'proxy-addr'
-import Env from '@ioc:Adonis/Core/Env'
-import { ServerConfig } from '@ioc:Adonis/Core/Server'
-import { LoggerConfig } from '@ioc:Adonis/Core/Logger'
-import { ProfilerConfig } from '@ioc:Adonis/Core/Profiler'
-import { ValidatorConfig } from '@ioc:Adonis/Core/Validator'
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/core/http'
+import { defineConfig as defineLoggerConfig } from '@adonisjs/core/logger'
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +16,7 @@ import { ValidatorConfig } from '@ioc:Adonis/Core/Validator'
 | be decrypted.
 |
 */
-export const appKey: string = Env.get('APP_KEY')
+export const appKey: string = env.get('APP_KEY')
 
 /*
 |--------------------------------------------------------------------------
@@ -29,7 +27,7 @@ export const appKey: string = Env.get('APP_KEY')
 | the config options to make keep server secure.
 |
 */
-export const http: ServerConfig = {
+export const http = defineConfig({
   /*
   |--------------------------------------------------------------------------
   | Allow method spoofing
@@ -51,7 +49,7 @@ export const http: ServerConfig = {
   | Change this value only when you know what you are doing.
   |
   */
-  subDomainOffset: 2,
+  subdomainOffset: 2,
 
   /*
   |--------------------------------------------------------------------------
@@ -91,10 +89,10 @@ export const http: ServerConfig = {
   |--------------------------------------------------------------------------
   |
   | Define the query string name for the JSONP callback. Make sure to set it
-  | to `false` when not using JSONP.
+  | to `undefined` when not using JSONP.
   |
   */
-  jsonpCallbackName: false,
+  jsonpCallbackName: undefined,
 
   /*
   |--------------------------------------------------------------------------
@@ -113,7 +111,7 @@ export const http: ServerConfig = {
     secure: false,
     sameSite: false,
   },
-}
+})
 
 /*
 |--------------------------------------------------------------------------
@@ -124,7 +122,7 @@ export const http: ServerConfig = {
 | the logger drivers you want to use for logging messages.
 |
 */
-export const logger: LoggerConfig = {
+export const logger = defineLoggerConfig({
   /*
   |--------------------------------------------------------------------------
   | Default Log Level
@@ -142,7 +140,6 @@ export const logger: LoggerConfig = {
   | - trace:   5
   |
   */
-  level: Env.get('LOG_LEVEL', 'info'),
 
   /*
   |--------------------------------------------------------------------------
@@ -153,8 +150,45 @@ export const logger: LoggerConfig = {
   | can have huge impact on performance.
   |
   */
-  prettyPrint: Env.get('NODE_ENV') === 'development',
-}
+
+  /*
+  |--------------------------------------------------------------------------
+  | Default driver
+  |--------------------------------------------------------------------------
+  |
+  | The default driver to use for logging messages.
+  |
+  */
+  default: 'app',
+
+  /*
+  |--------------------------------------------------------------------------
+  | Loggers
+  |--------------------------------------------------------------------------
+  |
+  | The loggers object can be used to define multiple loggers.
+  | See docs for more details
+  |
+  */
+  loggers: {
+    app: {
+      enabled: true,
+      name: env.get('APP_NAME'),
+      level: env.get('LOG_LEVEL', 'info'),
+      transport: {
+        targets: [
+          {
+            target: 'pino-pretty',
+            level: 'info',
+            options: {
+              colorize: true,
+            },
+          },
+        ],
+      },
+    },
+  },
+})
 
 /*
 |--------------------------------------------------------------------------
@@ -165,7 +199,7 @@ export const logger: LoggerConfig = {
 | issues.
 |
 */
-export const profiler: ProfilerConfig = {
+export const profiler = {
   /*
   |--------------------------------------------------------------------------
   | Enable/disable profiler
@@ -210,4 +244,4 @@ export const profiler: ProfilerConfig = {
 | body against certain schema.
 |
 */
-export const validator: ValidatorConfig = {}
+export const validator = {}

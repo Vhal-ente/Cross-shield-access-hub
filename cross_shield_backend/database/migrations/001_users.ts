@@ -10,7 +10,9 @@ export default class extends BaseSchema {
       table.string('email', 255).notNullable().unique()
       table.string('phone', 20).notNullable()
       table.string('password', 180).notNullable()
-      table.enum('role', ['super_admin', 'health_practitioner', 'supplier', 'diaspora', 'beneficiary']).notNullable()
+      table
+        .enum('role', ['super_admin', 'health_practitioner', 'supplier', 'diaspora', 'beneficiary'])
+        .notNullable()
       table.enum('status', ['active', 'pending', 'suspended']).defaultTo('pending')
       table.string('location', 255).nullable()
       table.string('license_number', 100).nullable() // For health practitioners
