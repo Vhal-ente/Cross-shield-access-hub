@@ -18,34 +18,34 @@ export default class extends BaseSeeder {
     )
 
     // Create sample health practitioner
-    await User.firstOrCreate(
-      { email: 'doctor@crossshield.com' },
-      {
-        fullName: 'Dr. John Smith',
-        email: 'doctor@crossshield.com',
-        phone: '+234-111-111-1111',
-        password: 'password123',
-        role: 'health_practitioner',
-        status: 'active',
-        location: 'Lagos, Nigeria',
-        licenseNumber: 'MED-12345',
-      }
-    )
+    // await User.firstOrCreate(
+    //   { email: 'doctor@crossshield.com' },
+    //   {
+    //     fullName: 'Dr. John Smith',
+    //     email: 'doctor@crossshield.com',
+    //     phone: '+234-111-111-1111',
+    //     password: 'password123',
+    //     role: 'health_practitioner',
+    //     status: 'active',
+    //     location: 'Lagos, Nigeria',
+    //     licenseNumber: 'MED-12345',
+    //   }
+    // )
 
     // Create sample supplier
-    await User.firstOrCreate(
-      { email: 'supplier@crossshield.com' },
-      {
-        fullName: 'MediSupply Ltd',
-        email: 'supplier@crossshield.com',
-        phone: '+234-222-222-2222',
-        password: 'password123',
-        role: 'supplier',
-        status: 'active',
-        location: 'Abuja, Nigeria',
-        businessName: 'MediSupply Limited',
-      }
-    )
+    // await User.firstOrCreate(
+    //   { email: 'supplier@crossshield.com' },
+    //   {
+    //     fullName: 'MediSupply Ltd',
+    //     email: 'supplier@crossshield.com',
+    //     phone: '+234-222-222-2222',
+    //     password: 'password123',
+    //     role: 'supplier',
+    //     status: 'active',
+    //     location: 'Abuja, Nigeria',
+    //     businessName: 'MediSupply Limited',
+    //   }
+    // )
 
     // Create sample diaspora user
     await User.firstOrCreate(

@@ -26,48 +26,48 @@ const Dashboard = () => {
       icon: Shield,
       color: "bg-red-500"
     },
-    {
-      id: "health_practitioner" as UserRole,
-      title: "Health Practitioner",
-      description: "Fulfill requests, refer patients, source medications",
-      icon: Users,
-      color: "bg-blue-500"
-    },
-    {
-      id: "supplier" as UserRole,
-      title: "Supplier",
-      description: "Respond to requests, advertise products",
-      icon: Package,
-      color: "bg-green-500"
-    },
-    {
-      id: "diaspora" as UserRole,
-      title: "Diaspora",
-      description: "Manage beneficiaries, request medications",
-      icon: Globe,
-      color: "bg-purple-500"
-    },
-    {
-      id: "beneficiary" as UserRole,
-      title: "Beneficiary",
-      description: "Request medications, place special orders",
-      icon: Heart,
-      color: "bg-pink-500"
-    }
+    // {
+    //   id: "health_practitioner" as UserRole,
+    //   title: "Health Practitioner",
+    //   description: "Fulfill requests, refer patients, source medications",
+    //   icon: Users,
+    //   color: "bg-blue-500"
+    // },
+    // {
+    //   id: "supplier" as UserRole,
+    //   title: "Supplier",
+    //   description: "Respond to requests, advertise products",
+    //   icon: Package,
+    //   color: "bg-green-500"
+    // },
+    // {
+    //   id: "diaspora" as UserRole,
+    //   title: "Diaspora",
+    //   description: "Manage beneficiaries, request medications",
+    //   icon: Globe,
+    //   color: "bg-purple-500"
+    // },
+    // {
+    //   id: "beneficiary" as UserRole,
+    //   title: "Beneficiary",
+    //   description: "Request medications, place special orders",
+    //   icon: Heart,
+    //   color: "bg-pink-500"
+    // }
   ];
 
   const renderDashboard = () => {
     switch (selectedRole) {
       case "super_admin":
         return <SuperAdminDashboard />;
-      case "health_practitioner":
-        return <HealthPractitionerDashboard />;
-      case "supplier":
-        return <SupplierDashboard />;
-      case "diaspora":
-        return <DiasporaDashboard />;
-      case "beneficiary":
-        return <BeneficiaryDashboard />;
+      // case "health_practitioner":
+      //   return <HealthPractitionerDashboard />;
+      // case "supplier":
+      //   return <SupplierDashboard />;
+      // case "diaspora":
+      //   return <DiasporaDashboard />;
+      // case "beneficiary":
+      //   return <BeneficiaryDashboard />;
       default:
         return <SuperAdminDashboard />;
     }
