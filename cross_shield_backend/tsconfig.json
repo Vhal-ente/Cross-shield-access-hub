@@ -1,0 +1,25 @@
+// {
+//   "extends": "@adonisjs/tsconfig/tsconfig.app.json",
+//   "compilerOptions": {
+//     "rootDir": "./",
+//     "outDir": "./build"
+//   }
+// }
+
+{
+  "extends": "@adonisjs/tsconfig/tsconfig.app.json",
+  "compilerOptions": {
+    "rootDir": "./",
+    "outDir": "./build",
+    "moduleResolution": "node16",
+    "baseUrl": ".",
+    "paths": {
+      "@ioc:Adonis/*": ["./node_modules/@adonisjs/*/build/adonis-ioc.d.ts"],
+       "@ioc:Adonis/Addons/Auth": ["@adonisjs/auth/build/adonis-typings"],
+      "App/*": ["./app/*"],
+      "Config/*": ["./config/*"],
+      "Database/*": ["./database/*"]
+    },
+  },
+  "include": ["**/*.ts", ]
+}
