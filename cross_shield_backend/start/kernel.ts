@@ -24,7 +24,8 @@ server.errorHandler(() => import('#exceptions/handler'))
  */
 server.use([
   () => import('#middleware/container_bindings_middleware'),
-  () => import('#middleware/force_json_response_middleware'),
+  // () => import('#middleware/force_json_response_middleware'),
+  () => import('#middleware/force_json_response_middleware'), // don't unwrap .default
   () => import('@adonisjs/cors/cors_middleware'),
   () => import('@adonisjs/core/bodyparser_middleware'),
 ])
@@ -40,5 +41,6 @@ router.use([() => import('@adonisjs/auth/initialize_auth_middleware')])
  * the routes or the routes group.
  */
 export const middleware = router.named({
+  checkPermission: () => import('#middleware/check_permission_middleware'),
   auth: () => import('#middleware/auth_middleware'),
 })

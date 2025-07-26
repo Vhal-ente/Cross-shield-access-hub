@@ -193,8 +193,9 @@
 //     }
 //   }
 // }
-
-import type { HttpContext } from '@adonisjs/core/http'
+import Database from '@adonisjs/lucid/services/db'
+// import { vine } from '@adonisjs/validator'
+import { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import { createUserValidator, loginValidator } from '#validators/auth'
 import { Exception } from '@adonisjs/core/exceptions'
@@ -206,18 +207,39 @@ export default class AuthController {
 
       const user = await User.create({
         ...payload,
-        status: 'pending' as const,
+        roleId: 5,
+        status: 'pending',
       })
 
+      // Load user with role and permissions
+      await user.load('role', (roleQuery) => {
+        roleQuery.preload('permissions')
+      })
+      // Create token
+      const token = await User.accessTokens.create(user)
+      const dbToken = await Database.from('api_tokens')
+        .where('token', token.value!.release())
+        .first()
+      if (!dbToken) {
+        console.error('❌ Register: Token not saved in api_tokens')
+        // Manually insert for debugging
+        await Database.table('api_tokens').insert({
+          user_id: user.id,
+          name: 'auth_token',
+          type: 'api',
+          token: token.value!.release(),
+          expires_at: token.expiresAt,
+          created_at: new Date(),
+        })
+        console.log('✅ Register: Manually inserted token into api_tokens')
+      } else {
+        console.log('✅ Register: Token found in api_tokens:', dbToken)
+      }
+
       return response.status(201).json({
-        message: 'User registered successfully',
-        user: {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
+        message: 'Registration successful',
+        user: user.toJSON(), // Return directly
+        token: token.value!.release(),
       })
     } catch (error) {
       if (error instanceof Exception && 'messages' in error) {
@@ -235,15 +257,113 @@ export default class AuthController {
     }
   }
 
+  // public async login({ request, response }: HttpContext) {
+  //   try {
+  //     console.log('🔍 LOGIN ATTEMPT STARTED')
+
+  //     // Step 1: Validate input
+  //     const { email, password } = await request.validateUsing(loginValidator)
+  //     console.log('✅ Input validation passed for:', email)
+
+  //     // Step 2: Use the working User.verifyCredentials method
+  //     console.log('🔐 Verifying credentials...')
+  //     const user = await User.verifyCredentials(email, password)
+
+  //     if (!user) {
+  //       console.log('❌ Credential verification failed for:', email)
+  //       return response.status(401).json({
+  //         message: 'Invalid credentials',
+  //       })
+  //     }
+
+  //     console.log('✅ Credentials verified successfully for user:', {
+  //       id: user.id,
+  //       email: user.email,
+  //       fullName: user.fullName,
+  //       status: user.status,
+  //     })
+
+  //     // Step 3: Check user status
+  //     if (user.status !== 'active') {
+  //       console.log('⚠️ User account is not active:', user.status)
+  //       return response.status(403).json({
+  //         message: 'Account is not active. Please contact administrator.',
+  //       })
+  //     }
+
+  //     // Step 4: Generate access token
+  //     console.log('🎫 Generating access token...')
+  //     const token = await User.accessTokens.create(user)
+  //     console.log('✅ Access token generated successfully')
+
+  //     // Load user with role and permissions
+  //     await user.load('role', (roleQuery) => {
+  //       roleQuery.preload('permissions')
+  //     })
+  //     // Check if role was loaded
+  //     if (!user.role) {
+  //       console.log(`User ${user.email} has no role assigned`)
+  //       // Optionally assign a default role or handle this case
+  //     }
+
+  //     console.log('🎉 LOGIN SUCCESSFUL')
+  //     return response.json({
+  //       message: 'Login successful',
+  //       user: user.serialize(),
+  //       token: token.value!.release() || '', // Ensure token is safely released
+  //     })
+  //   } catch (error) {
+  //     console.error('💥 LOGIN ERROR:', {
+  //       type: error.constructor.name,
+  //       message: error.message,
+  //       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+  //     })
+
+  //     // Handle validation errors
+  //     if (error instanceof Exception && 'messages' in error) {
+  //       return response.status(422).json({
+  //         message: 'Validation failed',
+  //         errors: error.messages,
+  //       })
+  //     }
+
+  //     // Handle credential errors (thrown by User.verifyCredentials)
+  //     if (error.message && error.message.toLowerCase().includes('credential')) {
+  //       return response.status(401).json({
+  //         message: 'Invalid credentials',
+  //       })
+  //     }
+
+  //     // Handle other errors
+  //     return response.status(500).json({
+  //       message: 'Login failed',
+  //       error:
+  //         process.env.NODE_ENV === 'development'
+  //           ? error instanceof Error
+  //             ? error.message
+  //             : 'Unknown error'
+  //           : 'Internal server error',
+  //     })
+  //   }
+  // }
   public async login({ request, response }: HttpContext) {
     try {
       console.log('🔍 LOGIN ATTEMPT STARTED')
 
-      // Step 1: Validate input
+      // // Step 1: Define validator using vine
+      // const loginValidator = vine.compile(
+      //   vine.object({
+      //     email: vine.string().email(),
+      //     password: vine.string().minLength(6),
+      //   })
+      // )
+      // console.log('✅ Validator compiled')
+
+      // Step 2: Validate input
       const { email, password } = await request.validateUsing(loginValidator)
       console.log('✅ Input validation passed for:', email)
 
-      // Step 2: Use the working User.verifyCredentials method
+      // Step 3: Verify credentials
       console.log('🔐 Verifying credentials...')
       const user = await User.verifyCredentials(email, password)
 
@@ -261,7 +381,7 @@ export default class AuthController {
         status: user.status,
       })
 
-      // Step 3: Check user status
+      // Step 4: Check user status
       if (user.status !== 'active') {
         console.log('⚠️ User account is not active:', user.status)
         return response.status(403).json({
@@ -269,22 +389,50 @@ export default class AuthController {
         })
       }
 
-      // Step 4: Generate access token
+      // Step 5: Generate access token
       console.log('🎫 Generating access token...')
-      const token = await User.accessTokens.create(user)
-      console.log('✅ Access token generated successfully')
+      let token
+      try {
+        token = await User.accessTokens.create(user, [], { name: 'auth_token', expiresIn: '7d' })
+        console.log('✅ Access token generated:', token.value?.release())
+      } catch (tokenError) {
+        console.error('💥 Token creation failed:', tokenError)
+        throw new Error('Failed to generate access token')
+      }
+
+      // Verify token in database
+      const dbToken = await Database.from('api_tokens')
+        .where('token', token.value!.release())
+        .first()
+      if (!dbToken) {
+        console.error('❌ Token not saved in api_tokens')
+        // Manually insert for debugging
+        await Database.table('api_tokens').insert({
+          user_id: user.id,
+          name: 'auth_token',
+          type: 'api',
+          token: token.value!.release(),
+          expires_at: token.expiresAt,
+          created_at: new Date(),
+        })
+        console.log('✅ Manually inserted token into api_tokens')
+      } else {
+        console.log('✅ Token found in api_tokens:', dbToken)
+      }
+
+      // Load user with role and permissions
+      await user.load('role', (roleQuery) => {
+        roleQuery.preload('permissions')
+      })
+      if (!user.role) {
+        console.log(`⚠️ User ${user.email} has no role assigned`)
+      }
 
       console.log('🎉 LOGIN SUCCESSFUL')
       return response.json({
         message: 'Login successful',
-        user: {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-        },
-        token: token.value?.release() || '',
+        user: user.serialize(),
+        token: token.value!.release() || '',
       })
     } catch (error) {
       console.error('💥 LOGIN ERROR:', {
@@ -293,7 +441,6 @@ export default class AuthController {
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       })
 
-      // Handle validation errors
       if (error instanceof Exception && 'messages' in error) {
         return response.status(422).json({
           message: 'Validation failed',
@@ -301,14 +448,12 @@ export default class AuthController {
         })
       }
 
-      // Handle credential errors (thrown by User.verifyCredentials)
       if (error.message && error.message.toLowerCase().includes('credential')) {
         return response.status(401).json({
           message: 'Invalid credentials',
         })
       }
 
-      // Handle other errors
       return response.status(500).json({
         message: 'Login failed',
         error:
@@ -349,14 +494,23 @@ export default class AuthController {
 
   public async me({ auth, response }: HttpContext) {
     try {
-      const user = auth.user!
+      const user = auth.user
 
-      return response.json({
+      if (!user) {
+        return response.status(401).json({
+          message: 'Unauthorized',
+          error: 'No authenticated user found',
+        })
+      }
+
+      await user.load('role') // Optional, if needed
+
+      return response.ok({
         user: {
           id: user.id,
           fullName: user.fullName,
           email: user.email,
-          role: user.role,
+          role: user.role, // make sure it's loaded
           status: user.status,
           location: user.location,
           licenseNumber: user.licenseNumber,
@@ -365,9 +519,9 @@ export default class AuthController {
       })
     } catch (error) {
       console.error('Me endpoint error:', error)
-      return response.status(401).json({
-        message: 'Unauthorized',
-        error: 'Authentication required',
+      return response.status(500).json({
+        message: 'Internal server error',
+        error: error.message,
       })
     }
   }

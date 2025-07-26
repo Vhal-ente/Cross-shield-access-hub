@@ -1,13 +1,15 @@
+// app/models/User.ts
 import { DateTime } from 'luxon'
-import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import hash from '@adonisjs/core/services/hash'
+import { BaseModel, column, hasMany, belongsTo } from '@adonisjs/lucid/orm'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
-import type { HasMany } from '@adonisjs/lucid/types/relations'
-import MedicationRequest from './medication_request.js'
-import Product from './product.js'
-import Beneficiary from './beneficiary.js'
+import type { HasMany, BelongsTo } from '@adonisjs/lucid/types/relations'
+import Role from '#models/role'
+import MedicationRequest from '#models/medication_request'
+import Product from '#models/product'
+import Beneficiary from '#models/beneficiary'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -18,14 +20,22 @@ interface UserAttributes {
   id: number
   fullName: string
   email: string
-  role: string
+  roleId: number
   status: string
   location?: string | null
   licenseNumber?: string | null
   businessName?: string | null
 }
+
 export default class User extends compose(BaseModel, AuthFinder) implements UserAttributes {
-  static accessTokens = DbAccessTokensProvider.forModel(User)
+  // static accessTokens = DbAccessTokensProvider.forModel(User)
+  static accessTokens = DbAccessTokensProvider.forModel(User, {
+    expiresIn: '1 days',
+    prefix: 'oat_',
+    table: 'auth_access_tokens',
+    type: 'auth_token',
+    tokenSecretLength: 40,
+  })
 
   @column({ isPrimary: true })
   declare id: number
@@ -43,10 +53,10 @@ export default class User extends compose(BaseModel, AuthFinder) implements User
   declare password: string
 
   @column()
-  declare role: 'super_admin' | 'health_practitioner' | 'supplier' | 'diaspora' | 'beneficiary'
+  declare roleId: number
 
   @column()
-  declare status: 'active' | 'pending' | 'suspended'
+  declare status: 'active' | 'pending' | 'suspended' | 'rejected'
 
   @column()
   declare location: string | null
@@ -63,12 +73,11 @@ export default class User extends compose(BaseModel, AuthFinder) implements User
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
-  // @beforeSave()
-  // public static async hashPassword(user: User) {
-  //   if (user.$dirty.password) {
-  //     user.password = await hash.make(user.password)
-  //   }
-  // }
+  // Relationships
+  @belongsTo(() => Role, {
+    foreignKey: 'roleId',
+  })
+  declare role: BelongsTo<typeof Role>
 
   @hasMany(() => MedicationRequest)
   declare medicationRequests: HasMany<typeof MedicationRequest>
@@ -78,4 +87,28 @@ export default class User extends compose(BaseModel, AuthFinder) implements User
 
   @hasMany(() => Beneficiary)
   declare beneficiaries: HasMany<typeof Beneficiary>
+
+  // Helper method to check permissions
+  async hasPermission(permissionName: string): Promise<boolean> {
+    await this.load('role', (roleQuery) => {
+      roleQuery.preload('permissions')
+    })
+    if (!this.role || !this.role.permissions) return false
+
+    return this.role.permissions.some(
+      (permission) => permission.name === permissionName && permission.isActive
+    )
+  }
+
+  // Helper method to get all permissions
+  async getPermissions(): Promise<string[]> {
+    await this.load('role', (roleQuery) => {
+      roleQuery.preload('permissions')
+    })
+    if (!this.role || !this.role.permissions) return []
+
+    return this.role.permissions
+      .filter((permission) => permission.isActive)
+      .map((permission) => permission.name)
+  }
 }

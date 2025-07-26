@@ -7,18 +7,55 @@ import {
 } from '#validators/medication_request'
 
 export default class MedicationRequestsController {
-  public async index({ response }: HttpContext) {
+  // public async index({ response }: HttpContext) {
+  //   try {
+  //     const user = (response as any).locals.user as User
+  //     let requests
+
+  //     if (user.role.name === 'super_admin') {
+  //       requests = await MedicationRequest.query()
+  //         .preload('user')
+  //         .preload('assignedUser')
+  //         .preload('beneficiary')
+  //         .orderBy('created_at', 'desc')
+  //     } else if (user.role.name === 'health_practitioner') {
+  //       requests = await MedicationRequest.query()
+  //         .where('assigned_to', user.id)
+  //         .orWhere('status', 'pending')
+  //         .preload('user')
+  //         .preload('beneficiary')
+  //         .orderBy('created_at', 'desc')
+  //     } else {
+  //       requests = await MedicationRequest.query()
+  //         .where('user_id', user.id)
+  //         .preload('assignedUser')
+  //         .preload('beneficiary')
+  //         .orderBy('created_at', 'desc')
+  //     }
+
+  //     return response.json({
+  //       requests,
+  //     })
+  //   } catch (error) {
+  //     return response.status(500).json({
+  //       message: 'Failed to fetch requests',
+  //       error: error.message,
+  //     })
+  //   }
+  // }
+
+  public async index({ auth, response }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
+      const user = await auth.authenticate()
       let requests
 
-      if (user.role === 'super_admin') {
+      if (user.role.name === 'super_admin') {
         requests = await MedicationRequest.query()
           .preload('user')
           .preload('assignedUser')
           .preload('beneficiary')
           .orderBy('created_at', 'desc')
-      } else if (user.role === 'health_practitioner') {
+      } else if (user.role.name === 'health_practitioner') {
         requests = await MedicationRequest.query()
           .where('assigned_to', user.id)
           .orWhere('status', 'pending')
@@ -33,9 +70,7 @@ export default class MedicationRequestsController {
           .orderBy('created_at', 'desc')
       }
 
-      return response.json({
-        requests,
-      })
+      return response.json({ requests })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch requests',
@@ -44,10 +79,10 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async store({ request, response }: HttpContext) {
+  public async store({ request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(createMedicationRequestValidator)
-      const user = (response as any).locals.user as User
+      const user = await auth.authenticate()
 
       const medicationRequest = await MedicationRequest.create({
         ...payload,
@@ -70,9 +105,9 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async show({ params, response }: HttpContext) {
+  public async show({ params, response, auth }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
+      const user = await auth.authenticate()
       const request = await MedicationRequest.query()
         .where('id', params.id)
         .preload('user')
@@ -82,7 +117,7 @@ export default class MedicationRequestsController {
 
       // Check authorization
       if (
-        user.role !== 'super_admin' &&
+        user.role.name !== 'super_admin' &&
         request.userId !== user.id &&
         request.assignedTo !== user.id
       ) {
@@ -101,17 +136,17 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async update({ params, request, response }: HttpContext) {
+  public async update({ params, request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(updateMedicationRequestValidator)
-      const user = (response as any).locals.user as User
+      const user = await auth.authenticate()
 
       const medicationRequest = await MedicationRequest.findOrFail(params.id)
 
       // Check authorization
       if (
-        user.role !== 'super_admin' &&
-        user.role !== 'health_practitioner' &&
+        user.role.name !== 'super_admin' &&
+        user.role.name !== 'health_practitioner' &&
         medicationRequest.userId !== user.id
       ) {
         return response.status(403).json({
@@ -138,13 +173,13 @@ export default class MedicationRequestsController {
     }
   }
 
-  public async destroy({ params, response }: HttpContext) {
+  public async destroy({ params, response, auth }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
+      const user = await auth.authenticate()
       const medicationRequest = await MedicationRequest.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && medicationRequest.userId !== user.id) {
+      if (user.role.name !== 'super_admin' && medicationRequest.userId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to delete this request',
         })
