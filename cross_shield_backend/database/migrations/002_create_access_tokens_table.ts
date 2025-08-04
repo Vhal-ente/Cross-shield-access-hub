@@ -23,7 +23,7 @@ export default class extends BaseSchema {
       table.timestamp('last_used_at').nullable()
       table.timestamp('expires_at').nullable()
 
-      table.index(['tokenable_id', 'type'])
+      // table.index(['tokenable_id', 'type'])
     })
   }
 

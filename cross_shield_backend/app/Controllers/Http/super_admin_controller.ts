@@ -587,8 +587,11 @@ export default class SuperAdminController {
       return sendResponse(
         response,
         {
-          users: pendingUsers,
-          count: pendingUsers.total,
+          users: pendingUsers.all(),
+          meta: pendingUsers.getMeta(),
+          stats: {
+            total: pendingUsers.total,
+          },
         },
         'Pending registrations fetched successfully'
       )
@@ -687,7 +690,9 @@ export default class SuperAdminController {
       if (currentUser.role?.name !== 'super_admin') {
         return response.unauthorized({
           success: false,
-          message: 'Only super admins can access this route',
+          message: 'Insufficient permissions',
+          required: ['super_admin'],
+          userPermissions: [],
         })
       }
 
@@ -884,10 +889,11 @@ export default class SuperAdminController {
   /**
    * View all roles and their permissions
    */
-  async viewRoles({ response }: HttpContext) {
+  async viewRoles({ response, auth }: HttpContext) {
     try {
       const roles = await Role.query().preload('permissions').withCount('users')
-
+      console.log('User:', auth.user)
+      console.log('Role:', auth.user?.role)
       return sendResponse(response, roles, 'Roles fetched successfully')
     } catch (error) {
       return sendError(response, 'Error fetching roles', error)

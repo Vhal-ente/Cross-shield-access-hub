@@ -32,10 +32,12 @@ export default class BeneficiariesController {
     }
   }
 
-  public async store({ request, response }: HttpContext) {
+  public async store({ request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(createBeneficiaryValidator)
-      const user = (response as any).locals.user as User
+      const user = auth.user!
+
+      await user.load('role')
 
       if (user.role.name !== 'diaspora') {
         return response.status(403).json({

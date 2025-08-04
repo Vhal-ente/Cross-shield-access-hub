@@ -186,8 +186,16 @@ export default class PermissionSeeder extends BaseSeeder {
         module: 'content',
         action: 'manage_categories',
       },
+      {
+        name: 'super_admin',
+        description: 'Alias for full admin access',
+        module: 'system',
+        action: 'admin',
+      },
     ]
-
-    await Permission.createMany(permissions)
+    for (const permission of permissions) {
+      await Permission.firstOrCreate({ name: permission.name }, permission)
+    }
+    // await Permission.createMany(permissions)
   }
 }

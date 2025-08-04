@@ -151,11 +151,13 @@ export default class CheckPermission {
 
       // Optionally attach permissions for controller use
       auth.user!.getPermissions = async () => userPermissions
-
-      await next()
+      if (user.role.name === 'super_admin') {
+        await next()
+      }
     } catch (error) {
       return response.status(401).json({
         message: 'Authentication required',
+        error: error.message || 'An error occurred during authentication',
       })
     }
   }

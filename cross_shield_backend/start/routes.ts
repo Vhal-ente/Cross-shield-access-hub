@@ -226,20 +226,31 @@ Route.group(() => {
       guards: ['api'],
     })
   )
-  // Route.group(() => {
-  //   Route.get('/requests', '#controllers/requests_controller.index')
-  //   Route.get('/requests/:id', '#controllers/requests_controller.show')
-  //   Route.put('/requests/:id', '#controllers/requests_controller.update')
-  // }).middleware(middleware.auth({ guards: ['api'] })) // Specify guard if needed
+  Route.group(() => {
+    Route.get('/all-requests', '#controllers/http/requests_controller.index')
+    Route.get('/requests/:id', '#controllers/http/requests_controller.show')
+    Route.put('/requests/:id', '#controllers/http/requests_controller.update')
+    Route.post('/requests', '#controllers/http/requests_controller.store')
+  }).middleware(middleware.auth({ guards: ['api'] })) // Specify guard if needed
 }).prefix('/api/auth')
 
 // Protected API Routes (Authenticated Users)
 Route.group(() => {
+  // Medication Requests
   Route.resource('medication-requests', '#controllers/http/medication_requests_controller')
-  Route.resource('products', '#controllers/http/products_controller')
+  // Products
+  // Route.resource('products', '#controllers/http/products_controller')
+  Route.get('/all-products', '#controllers/http/products_controller.index')
+  Route.post('/products', '#controllers/http/products_controller.store')
+  Route.put('/products/:id', '#controllers/http/products_controller.update')
+  Route.get('/products/:id', '#controllers/http/products_controller.show')
+  Route.delete('/products/:id', '#controllers/http/products_controller.destroy')
+  // Approve/Reject Products
   Route.post('products/:id/approve', '#controllers/http/products_controller.approve')
   Route.post('products/:id/reject', '#controllers/http/products_controller.reject')
+  // Beneficiaries
   Route.resource('beneficiaries', '#controllers/http/beneficiaries_controller')
+  // Users (Admin Only)
   Route.resource('users', '#controllers/http/users_controller').except(['store'])
   Route.post('users/:id/approve', '#controllers/http/users_controller.approve')
   Route.post('users/:id/suspend', '#controllers/http/users_controller.suspend')

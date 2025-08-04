@@ -2,10 +2,15 @@ import vine from '@vinejs/vine'
 
 export const createMedicationRequestValidator = vine.compile(
   vine.object({
-    medicationName: vine.string(),
-    quantity: vine.number().positive(),
+    medications: vine
+      .array(
+        vine.object({
+          name: vine.string(),
+          quantity: vine.number().positive(),
+        })
+      )
+      .minLength(1),
     urgency: vine.enum(['normal', 'urgent', 'emergency']),
-    medicalCondition: vine.string().optional(),
     notes: vine.string().optional(),
     beneficiaryId: vine.number().positive().optional(),
   })
