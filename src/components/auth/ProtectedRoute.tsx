@@ -4,17 +4,24 @@ import { AuthModal } from './AuthModal';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: string[];
+  requiredRoles?: string[]; // Changed from requiredRole to requiredRoles (plural)
+  requiredPermissions?: string[]; // Added permission support
   fallback?: React.ReactNode;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requiredRole,
+  requiredRoles = [], // Default to empty array
+  requiredPermissions = [], // Default to empty array
   fallback 
 }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const token = localStorage.getItem('auth_token');
+  const { isAuthenticated, user, isLoading, canAccess, hasPermission } = useAuth();
   const [showAuthModal, setShowAuthModal] = React.useState(false);
+
+  if (!token) {
+    return;
+  }
 
   if (isLoading) {
     return (
@@ -52,30 +59,70 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (user?.status !== 'active') {
+    const statusMessages = {
+      pending: "Your account is pending approval from an administrator.",
+      suspended: "Your account has been suspended. Please contact support.",
+      rejected: "Your account application has been rejected. Please contact support."
+    };
+
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Account Pending Approval</h2>
+          <h2 className="text-2xl font-bold mb-4">Account Access Restricted</h2>
           <p className="text-gray-600">
-            Your account is pending approval from an administrator. 
-            Please check back later or contact support.
+            {statusMessages[user?.status as keyof typeof statusMessages] || 
+             "There's an issue with your account. Please contact support."}
           </p>
         </div>
       </div>
     );
   }
 
-  if (requiredRole && user && !requiredRole.includes(user.role)) {
+  // Check role requirements - Updated for new role system
+  if (requiredRoles.length > 0 && user && !canAccess(requiredRoles)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-2">
             You don't have permission to access this page.
+          </p>
+          <p className="text-sm text-gray-500">
+            Required role(s): {requiredRoles.join(', ')}
+          </p>
+          <p className="text-sm text-gray-500">
+            Your role: {user.role.name}
           </p>
         </div>
       </div>
     );
+  }
+
+  // Check permission requirements - New feature
+  if (requiredPermissions.length > 0) {
+    const hasAllPermissions = requiredPermissions.every(permission => 
+      hasPermission(permission)
+    );
+    
+    if (!hasAllPermissions) {
+      const missingPermissions = requiredPermissions.filter(permission => 
+        !hasPermission(permission)
+      );
+
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Insufficient Permissions</h2>
+            <p className="text-gray-600 mb-2">
+              You don't have the required permissions to access this page.
+            </p>
+            <p className="text-sm text-gray-500">
+              Missing permissions: {missingPermissions.join(', ')}
+            </p>
+          </div>
+        </div>
+      );
+    }
   }
 
   return <>{children}</>;

@@ -17,6 +17,9 @@ export default class Beneficiary extends BaseModel {
   declare phone: string
 
   @column()
+  declare email: string
+
+  @column()
   declare location: string
 
   @column()

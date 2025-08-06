@@ -64,7 +64,7 @@ const HeroSection = () => {
       {/* WhatsApp Chat Icon */}
       <div className="fixed bottom-6 right-6">
         <a
-          href="https://wa.me/your-number" // Replace with actual WhatsApp number
+          href=" https://wa.me/2348104016554" // Replace with actual WhatsApp number
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 bg-[#106FB2] rounded-full px-4 py-2 shadow-md"

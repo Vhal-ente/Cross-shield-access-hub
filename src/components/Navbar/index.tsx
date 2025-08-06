@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import CrossShield from '@/assets/cross shield 1.png';
 import { HiMenu, HiX } from 'react-icons/hi';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +6,23 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 
-const Navbar = () => {
+
+interface NavbarProps {
+  logo: string | ReactNode;
+  className?: string;
+  // theme?: "light" | "dark";
+  button?: {
+    label: string;
+    onClick: () => void;
+    className?: string;
+  };
+}
+
+const Navbar: React.FC<NavbarProps> = ({
+  logo,
+  className,
+  // theme = "light"
+}) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -36,6 +52,14 @@ const Navbar = () => {
       console.error('Logout failed:', error);
     }
   };
+  const formatRoleName = (roleName: string) => {
+    return roleName
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const roleDisplay = user?.role?.name ? formatRoleName(user.role.name) : 'User'
 
   return (
     <>
@@ -43,7 +67,11 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           {/* Logo */}
           <div className="border border-none p-1">
-            <img src={CrossShield} alt="Cross Shield Logo" className="h-14 w-auto" />
+            {typeof logo === 'string' ? (
+              <img src={logo} alt="Cross Shield Logo" className="h-14 w-auto" />
+            ) : (
+              logo
+            )}
           </div>
 
           {/* Desktop Nav */}
@@ -65,9 +93,9 @@ const Navbar = () => {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <User size={16} />
-                  <span className="text-sm font-medium">{user?.fullName}</span>
+                  <span className="text-sm font-medium">Welcome, {user?.fullName}</span>
                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                    {user?.role?.replace('_', ' ')}
+                  {roleDisplay}
                   </span>
                 </div>
                 <Button
@@ -128,9 +156,9 @@ const Navbar = () => {
                 {isAuthenticated ? (
                   <>
                     <div className="text-right">
-                      <p className="text-sm font-medium">{user?.fullName}</p>
+                      <p className="text-sm font-medium">Welcome, {user?.fullName}</p>
                       <p className="text-xs text-gray-500 capitalize">
-                        {user?.role?.replace('_', ' ')}
+                      {roleDisplay}
                       </p>
                     </div>
                     <Button

@@ -46,6 +46,7 @@ export default class AuthMiddleware {
       })
       return next()
     } catch {
+      console.log(ctx.request.headers())
       // fallback to JSON if request expects JSON
       if (ctx.request.ajax() || ctx.request.accepts(['json'])) {
         return ctx.response.status(401).json({ message: 'Unauthorized access' })

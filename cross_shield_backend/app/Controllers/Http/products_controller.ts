@@ -5,14 +5,16 @@ import { createProductValidator, updateProductValidator } from '#validators/prod
 import { DateTime } from 'luxon'
 
 export default class ProductsController {
-  public async index({ response }: HttpContext) {
+  public async index({ auth, response }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
+      const user = auth.user!
+      await user.load('role') // Ensure role is loaded
+
       let products
 
-      if (user.role === 'super_admin') {
+      if (user.role.name === 'super_admin') {
         products = await Product.query().preload('supplier').orderBy('created_at', 'desc')
-      } else if (user.role === 'supplier') {
+      } else if (user.role.name === 'supplier') {
         products = await Product.query().where('supplier_id', user.id).orderBy('created_at', 'desc')
       } else {
         products = await Product.query()
@@ -21,9 +23,7 @@ export default class ProductsController {
           .orderBy('created_at', 'desc')
       }
 
-      return response.json({
-        products,
-      })
+      return response.json({ products })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch products',
@@ -32,22 +32,134 @@ export default class ProductsController {
     }
   }
 
-  public async store({ request, response }: HttpContext) {
-    try {
-      const payload = await request.validateUsing(createProductValidator)
-      const user = (response as any).locals.user as User
+  // public async store({ request, response, auth }: HttpContext) {
+  //   try {
+  //     const payload = await request.validateUsing(createProductValidator)
+  //     const user = auth.user
 
-      if (user.role !== 'supplier') {
-        return response.status(403).json({
-          message: 'Only suppliers can create products',
+  //     if (!user || user.role.name !== 'supplier') {
+  //       return response.status(403).json({
+  //         message: 'Only suppliers can create products',
+  //       })
+  //     }
+
+  //     const product = await Product.create({
+  //       ...payload,
+  //       supplierId: user.id,
+  //       status: 'pending',
+  //       businessName: user.businessName || undefined,
+  //     })
+
+  //     await product.load('supplier')
+
+  //     return response.status(201).json({
+  //       message: 'Product created successfully',
+  //       product,
+  //     })
+  //   } catch (error) {
+  //     return response.status(400).json({
+  //       message: 'Failed to create product',
+  //       errors: error.messages || error.message,
+  //     })
+  //   }
+  // }
+
+  public async store({ request, response, auth }: HttpContext) {
+    try {
+      const user = auth.user
+
+      if (!user) {
+        return response.status(401).json({
+          message: 'User not authenticated',
         })
       }
 
+      // Load role if not already loaded
+      const allowedRoles = ['supplier' || 'super_admin']
+      if (!allowedRoles) {
+        await user.load('role')
+      }
+
+      console.log('User role after load:', user.role)
+
+      if (!allowedRoles.includes(user.role.name)) {
+        return response.status(403).json({
+          message: 'Only suppliers can create products',
+          userRole: user.role?.name || 'no role',
+        })
+      }
+
+      // Check content type and handle accordingly
+      const contentType = request.header('content-type') || ''
+      let payload
+
+      if (contentType.includes('multipart/form-data')) {
+        // Handle FormData
+        console.log('Processing FormData...')
+
+        // Get all form fields
+        const formData = request.all()
+        console.log('FormData fields:', formData)
+
+        // Manual validation for FormData (since validator might not work with FormData)
+        const requiredFields = ['name', 'phone', 'email', 'location', 'businessName']
+        const missingFields = requiredFields.filter((field) => !formData[field])
+
+        if (missingFields.length > 0) {
+          return response.status(400).json({
+            message: 'Validation failed',
+            errors: {
+              message: `Missing required fields: ${missingFields.join(', ')}`,
+              fields: missingFields,
+            },
+          })
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(formData.email)) {
+          return response.status(400).json({
+            message: 'Validation failed',
+            errors: {
+              email: ['Please enter a valid email address'],
+            },
+          })
+        }
+
+        // Validate phone format
+        const phoneRegex = /^\+?\d{10,15}$/
+        if (!phoneRegex.test(formData.phone)) {
+          return response.status(400).json({
+            message: 'Validation failed',
+            errors: {
+              phone: ['Please enter a valid phone number'],
+            },
+          })
+        }
+
+        payload = formData
+      } else if (contentType.includes('application/json')) {
+        // Handle JSON - use existing validator
+        console.log('Processing JSON...')
+        payload = await request.validateUsing(createProductValidator)
+      } else {
+        return response.status(400).json({
+          message: 'Unsupported content type. Use either application/json or multipart/form-data',
+        })
+      }
+
+      console.log('Final payload:', payload)
+
+      // Create product with validated payload
       const product = await Product.create({
-        ...payload,
+        name: payload.name,
+        phone: payload.phone,
+        email: payload.email,
+        location: payload.location,
+        businessName: payload.businessName,
         supplierId: user.id,
         status: 'pending',
-        expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
+        // Add any other fields from your Product model
       })
 
       await product.load('supplier')
@@ -57,6 +169,7 @@ export default class ProductsController {
         product,
       })
     } catch (error) {
+      console.error('Product creation error:', error)
       return response.status(400).json({
         message: 'Failed to create product',
         errors: error.messages || error.message,
@@ -86,7 +199,7 @@ export default class ProductsController {
       const product = await Product.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && product.supplierId !== user.id) {
+      if (user.role.name !== 'super_admin' && product.supplierId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to update this product',
         })
@@ -94,7 +207,7 @@ export default class ProductsController {
 
       product.merge({
         ...payload,
-        expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
+        // expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
       })
       await product.save()
 
@@ -118,7 +231,7 @@ export default class ProductsController {
       const product = await Product.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && product.supplierId !== user.id) {
+      if (user.role.name !== 'super_admin' && product.supplierId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to delete this product',
         })
@@ -140,7 +253,7 @@ export default class ProductsController {
     try {
       const user = (response as any).locals.user as User
 
-      if (user.role !== 'super_admin') {
+      if (user.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can approve products',
         })
@@ -167,7 +280,7 @@ export default class ProductsController {
     try {
       const user = (response as any).locals.user as User
 
-      if (user.role !== 'super_admin') {
+      if (user.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can reject products',
         })

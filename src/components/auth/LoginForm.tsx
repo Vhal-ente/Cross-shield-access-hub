@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -14,6 +15,7 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -27,6 +29,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
 
     try {
       await login(formData.email, formData.password);
+    navigate ('/dashboard') // Redirect to dashboard after successful login 
       toast.success('Login successful!');
       onSuccess?.();
     } catch (error: any) {
@@ -107,7 +110,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
           <div className="mt-4 p-3 bg-gray-50 rounded-md">
             <p className="text-xs text-gray-600 mb-2">Demo accounts:</p>
             <div className="text-xs space-y-1">
-              <p><strong>Admin:</strong> admin@crossshield.com / password123</p>
+              {/* <p><strong>Admin:</strong> admin@crossshield.com / password123</p> */}
               <p><strong>Doctor:</strong> doctor@crossshield.com / password123</p>
               <p><strong>Supplier:</strong> supplier@crossshield.com / password123</p>
               <p><strong>Diaspora:</strong> diaspora@crossshield.com / password123</p>

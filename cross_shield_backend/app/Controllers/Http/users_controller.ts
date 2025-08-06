@@ -7,7 +7,7 @@ export default class UsersController {
     try {
       const currentUser = (response as any).locals.user as User
 
-      if (currentUser.role !== 'super_admin') {
+      if (currentUser.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can view all users',
         })
@@ -59,7 +59,7 @@ export default class UsersController {
         .firstOrFail()
 
       // Check authorization
-      if (currentUser.role !== 'super_admin' && currentUser.id !== user.id) {
+      if (currentUser.role.name !== 'super_admin' && currentUser.id !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to view this user',
         })
@@ -83,14 +83,14 @@ export default class UsersController {
       const user = await User.findOrFail(params.id)
 
       // Check authorization
-      if (currentUser.role !== 'super_admin' && currentUser.id !== user.id) {
+      if (currentUser.role.name !== 'super_admin' && currentUser.id !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to update this user',
         })
       }
 
       // Only super admin can change status
-      if (payload.status && currentUser.role !== 'super_admin') {
+      if (payload.status && currentUser.role.name !== 'super_admin') {
         delete payload.status
       }
 
@@ -123,7 +123,7 @@ export default class UsersController {
     try {
       const currentUser = (response as any).locals.user as User
 
-      if (currentUser.role !== 'super_admin') {
+      if (currentUser.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can approve users',
         })
@@ -154,7 +154,7 @@ export default class UsersController {
     try {
       const currentUser = (response as any).locals.user as User
 
-      if (currentUser.role !== 'super_admin') {
+      if (currentUser.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can suspend users',
         })
@@ -185,7 +185,7 @@ export default class UsersController {
     try {
       const currentUser = (response as any).locals.user as User
 
-      if (currentUser.role !== 'super_admin') {
+      if (currentUser.role.name !== 'super_admin') {
         return response.status(403).json({
           message: 'Only super admin can delete users',
         })

@@ -14,22 +14,34 @@ export default class Product extends BaseModel {
   declare name: string
 
   @column()
-  declare description: string | null
+  declare location: string
 
   @column()
-  declare price: number
+  declare phone: string
 
   @column()
-  declare quantity: number
-
-  @column.date()
-  declare expiryDate: DateTime
+  declare email: string
 
   @column()
-  declare nafdacNumber: string | null
+  declare businessName: string
 
-  @column()
-  declare imageUrl: string | null
+  // @column()
+  // declare description: string | null
+
+  // @column()
+  // declare price: number
+
+  // @column()
+  // declare quantity: number
+
+  // @column.date()
+  // declare expiryDate: DateTime
+
+  // @column()
+  // declare nafdacNumber: string | null
+
+  // @column()
+  // declare imageUrl: string | null
 
   @column()
   declare status: 'pending' | 'approved' | 'rejected'

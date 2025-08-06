@@ -9,9 +9,9 @@ export default class BeneficiariesController {
       const user = (response as any).locals.user as User
       let beneficiaries
 
-      if (user.role === 'super_admin') {
+      if (user.role.name === 'super_admin') {
         beneficiaries = await Beneficiary.query().preload('diaspora').orderBy('created_at', 'desc')
-      } else if (user.role === 'diaspora') {
+      } else if (user.role.name === 'diaspora') {
         beneficiaries = await Beneficiary.query()
           .where('diaspora_id', user.id)
           .orderBy('created_at', 'desc')
@@ -32,12 +32,14 @@ export default class BeneficiariesController {
     }
   }
 
-  public async store({ request, response }: HttpContext) {
+  public async store({ request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(createBeneficiaryValidator)
-      const user = (response as any).locals.user as User
+      const user = auth.user!
 
-      if (user.role !== 'diaspora') {
+      await user.load('role')
+
+      if (user.role.name !== 'diaspora') {
         return response.status(403).json({
           message: 'Only diaspora users can create beneficiaries',
         })
@@ -72,7 +74,7 @@ export default class BeneficiariesController {
         .firstOrFail()
 
       // Check authorization
-      if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
+      if (user.role.name !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to view this beneficiary',
         })
@@ -96,7 +98,7 @@ export default class BeneficiariesController {
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
+      if (user.role.name !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to update this beneficiary',
         })
@@ -125,7 +127,7 @@ export default class BeneficiariesController {
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
       // Check authorization
-      if (user.role !== 'super_admin' && beneficiary.diasporaId !== user.id) {
+      if (user.role.name !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
           message: 'Unauthorized to delete this beneficiary',
         })
