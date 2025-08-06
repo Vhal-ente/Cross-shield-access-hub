@@ -135,7 +135,7 @@ const Footer = () => {
 
       {/* Copyright */}
       <div className="text-center text-xs text-gray-500 mt-10">
-        &copy; {new Date().getFullYear()} Your Company. All rights reserved.
+        &copy; {new Date().getFullYear()} @crossshieldhc. All rights reserved.
       </div>
     </footer>
   );
