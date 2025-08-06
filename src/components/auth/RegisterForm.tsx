@@ -28,33 +28,66 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-
+  
     if (!formData.role) {
       toast.error('Please select a role');
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     try {
       const { confirmPassword, ...registrationData } = formData;
       await register(registrationData);
       toast.success('Registration successful! Please wait for admin approval.');
       onSuccess?.();
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      const response = error?.response;
+  
+      // Case 1: API returns 409 Conflict for existing email
+      if (response?.status === 409 && response?.data?.message?.toLowerCase().includes('email')) {
+        toast.error('Email already exists.');
+      }
+      // Case 2: Laravel/Adonis-style validation error structure
+      else if (response?.data?.errors) {
+        const errors = response.data.errors;
+  
+        // Check if it's an array of errors or an object with field keys
+        if (Array.isArray(errors)) {
+          const message = errors.map((e: any) => e.message || e).join('\n');
+          toast.error(message);
+        } else if (typeof errors === 'object') {
+          // Example: { email: ['Email already taken.'] }
+          const emailError = errors.email?.[0];
+          if (emailError?.toLowerCase().includes('exist') || emailError?.toLowerCase().includes('taken')) {
+            toast.error('Email already exists.');
+          } else {
+            const allMessages = Object.values(errors).flat().join('\n');
+            toast.error(allMessages || 'Registration failed due to validation errors.');
+          }
+        }
+      }
+      // Fallback for known error messages
+      else if (error?.message) {
+        toast.error(error.message);
+      }
+      // Final fallback
+      else {
+        toast.error('Registration failed due to an unknown error.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -125,7 +158,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
                 <SelectItem value="health_practitioner">Health Practitioner</SelectItem>
                 <SelectItem value="supplier">Supplier</SelectItem>
                 <SelectItem value="diaspora">Diaspora</SelectItem>
-                <SelectItem value="beneficiary">Beneficiary</SelectItem>
+                <SelectItem value="patient">Patient</SelectItem>
               </SelectContent>
             </Select>
           </div>

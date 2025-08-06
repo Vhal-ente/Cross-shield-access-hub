@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
-import Beneficiary from './beneficiary.js'
+import Beneficiary from './beneficiary.js' // Update to the correct file name
 
 export default class MedicationRequest extends BaseModel {
   @column({ isPrimary: true })

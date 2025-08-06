@@ -61,7 +61,7 @@ export default class Request extends BaseModel {
    * Type of request: 'medication', 'beneficiary', 'supplier', 'health_professional'
    */
   @column()
-  declare type: 'medication' | 'beneficiary' | 'supplier' | 'health_professional'
+  declare type: 'Medication_Request'
 
   /**
    * Optional sub-type or context, depending on the form

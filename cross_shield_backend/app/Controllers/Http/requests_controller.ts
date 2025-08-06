@@ -63,82 +63,52 @@ export default class RequestsController {
       const normalizedUrgency = urgencyMap[urgency as keyof typeof urgencyMap]
 
       // Step 2: Validate payload by type
-      switch (type) {
-        case 'beneficiary':
-          if (!payload?.name || !payload?.phone || !payload?.location || !payload?.email) {
-            return response.badRequest({ message: 'Missing beneficiary info in payload' })
-          }
-          break
+      const meds = Array.isArray(payload?.medications) ? payload.medications : []
 
-        case 'supplier':
-          if (
-            !payload?.name ||
-            !payload?.email ||
-            !payload?.businessName ||
-            !payload?.location ||
-            !payload?.phone
-          ) {
-            return response.badRequest({ message: 'Missing supplier info in payload' })
-          }
-          break
-
-        case 'health_professional':
-          if (!payload?.name || !payload?.profession || !payload?.licenseNumber) {
-            return response.badRequest({ message: 'Missing professional info in payload' })
-          }
-          break
-
-        case 'medication': {
-          const meds = Array.isArray(payload?.medications) ? payload.medications : []
-
-          if (meds.length === 0) {
-            return response.badRequest({
-              message: 'No medications provided',
-              debug: {
-                payloadExists: !!payload,
-                payloadType: typeof payload,
-                payloadKeys: payload ? Object.keys(payload) : null,
-                medicationsField: payload?.medications,
-                medicationsType: typeof payload?.medications,
-                isArray: Array.isArray(payload?.medications),
-              },
-            })
-          }
-
-          const validMeds = meds.filter((m) => {
-            const hasValidName = m?.name && typeof m.name === 'string' && m.name.trim() !== ''
-            const quantity = Number.parseFloat(m?.quantity)
-            const hasValidQuantity = !Number.isNaN(quantity) && quantity > 0
-            return hasValidName && hasValidQuantity
-          })
-
-          if (validMeds.length === 0) {
-            return response.badRequest({
-              message:
-                'At least one valid medication is required. Each medication must have a name and quantity > 0',
-              invalidMedications: meds.map((m) => ({
-                name: m?.name || 'missing',
-                quantity: m?.quantity || 'missing',
-                issues: [
-                  ...(!m?.name || typeof m.name !== 'string' || m.name.trim() === ''
-                    ? ['Invalid name']
-                    : []),
-                  ...(Number.isNaN(Number.parseFloat(m?.quantity)) ||
-                  Number.parseFloat(m?.quantity) <= 0
-                    ? ['Invalid quantity']
-                    : []),
-                ],
-              })),
-            })
-          }
-
-          // Store all medications in the existing medication field (comma-separated)
-          data.medication = validMeds.map((med) => med.name.trim()).join(', ')
-          // Don't set quantity for medication requests - we want individual quantities
-
-          break
-        }
+      if (meds.length === 0) {
+        return response.badRequest({
+          message: 'No medications provided',
+          debug: {
+            payloadExists: !!payload,
+            payloadType: typeof payload,
+            payloadKeys: payload ? Object.keys(payload) : null,
+            medicationsField: payload?.medications,
+            medicationsType: typeof payload?.medications,
+            isArray: Array.isArray(payload?.medications),
+          },
+        })
       }
+
+      const validMeds = meds.filter((m) => {
+        const hasValidName = m?.name && typeof m.name === 'string' && m.name.trim() !== ''
+        const quantity = Number.parseFloat(m?.quantity)
+        const hasValidQuantity = !Number.isNaN(quantity) && quantity > 0
+        return hasValidName && hasValidQuantity
+      })
+
+      if (validMeds.length === 0) {
+        return response.badRequest({
+          message:
+            'At least one valid medication is required. Each medication must have a name and quantity > 0',
+          invalidMedications: meds.map((m) => ({
+            name: m?.name || 'missing',
+            quantity: m?.quantity || 'missing',
+            issues: [
+              ...(!m?.name || typeof m.name !== 'string' || m.name.trim() === ''
+                ? ['Invalid name']
+                : []),
+              ...(Number.isNaN(Number.parseFloat(m?.quantity)) ||
+              Number.parseFloat(m?.quantity) <= 0
+                ? ['Invalid quantity']
+                : []),
+            ],
+          })),
+        })
+      }
+
+      // Store all medications in the existing medication field (comma-separated)
+      data.medication = validMeds.map((med) => med.name.trim()).join(', ')
+      // Don't set quantity for medication requests - we want individual quantities
 
       // Step 3: Save
       const newRequest = await Request.create({

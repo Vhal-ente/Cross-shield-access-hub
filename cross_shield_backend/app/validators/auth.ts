@@ -12,7 +12,7 @@ export const createUserValidator = vine.compile(
       }),
     phone: vine.string(),
     password: vine.string().minLength(6),
-    role: vine.enum(['health_practitioner', 'supplier', 'diaspora', 'beneficiary']),
+    role: vine.enum(['health_practitioner', 'supplier', 'diaspora', 'patient']),
     location: vine.string().optional(),
     licenseNumber: vine.string().optional(),
     businessName: vine.string().optional(),

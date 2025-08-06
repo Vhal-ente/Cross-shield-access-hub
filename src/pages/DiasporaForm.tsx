@@ -1,11 +1,13 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { FaLocationDot } from 'react-icons/fa6';
 import { FiMail } from 'react-icons/fi';
-import { X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 interface FormData {
-  fullName: string;
+  name: string;
   phone: string;
   email: string;
   location: string;
@@ -14,7 +16,7 @@ interface FormData {
 const DiasporaForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
-    fullName: '',
+    name: '',
     phone: '',
     email: '',
     location: 'New York, United States',
@@ -25,11 +27,86 @@ const DiasporaForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    // Add submission logic here (e.g., API call)
+  
+    if (!formData.phone.match(/^\+?\d{10,15}$/)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+  
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+  
+    if (!formData.location) {
+      toast.error("Please select a location");
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        toast.error("You must be logged in");
+        return;
+      }
+  
+      const form = new FormData();
+      form.append("name", formData.name);
+      form.append("location", formData.location);
+      form.append("phone", formData.phone);
+      form.append("email", formData.email);
+  
+      // --- First: Send to Beneficiary Endpoint ---
+      const beneficiaryRes = await fetch(`${API_BASE_URL}/beneficiaries`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+      });
+  
+      if (!beneficiaryRes.ok) {
+        const message = await beneficiaryRes.text();
+        throw new Error(message);
+      }
+  
+      const beneficiaryResult = await beneficiaryRes.json();
+  
+      // --- Then: Send to Request Endpoint ---
+      const requestRes = await fetch(`${API_BASE_URL}/auth/requests`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "beneficiary",
+          category: "registration",
+          notes: "Registering a new beneficiary",
+          payload: {
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            location: formData.location,
+          },
+        }),
+      });
+  
+      if (!requestRes.ok) {
+        const message = await requestRes.text();
+        throw new Error(message);
+      }
+  
+      toast.success("Request submitted successfully");
+      setTimeout(() => navigate("/"), 1500);
+  
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong");
+    }
   };
+  
 
   const handleClose = () => {
     navigate('/');
@@ -57,8 +134,8 @@ const DiasporaForm = () => {
           <div>
             <label className="block mb-2 font-medium text-sm sm:text-base">Full Name</label>
             <input
-              name="fullName"
-              value={formData.fullName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-base"
               placeholder="Enter your full name"
@@ -74,7 +151,7 @@ const DiasporaForm = () => {
                 Contact number (How we reach you)
               </label>
               <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
-                <span className="text-gray-600 text-sm pr-1">+370</span>
+                <span className="text-gray-600 text-sm pr-1">+234</span>
                 <input
                   type="tel"
                   name="phone"
@@ -118,6 +195,9 @@ const DiasporaForm = () => {
                 <option>New York, United States</option>
                 <option>London, United Kingdom</option>
                 <option>Toronto, Canada</option>
+                <option>Sydney, Australia</option>
+                <option>Berlin, Germany</option>
+                <option>Lagos, Nigeria</option>
               </select>
               <FaLocationDot className="absolute left-3 top-3 sm:top-3 text-gray-500" />
             </div>
@@ -134,9 +214,10 @@ const DiasporaForm = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full sm:w-auto min-w-[120px] bg-[#106FB2] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#106FC1] transition-all touch-manipulation text-base"
+            className="w-full sm:w-auto min-w-[120px] bg-[#106FB2] hover:bg-[#106FC1] text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2 touch-manipulation text-base"
           >
-            Submit →
+            <span>Submit</span>
+            <ChevronRight size={17} />
           </button>
         </form>
       </div>

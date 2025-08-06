@@ -5,9 +5,11 @@ import { createProductValidator, updateProductValidator } from '#validators/prod
 import { DateTime } from 'luxon'
 
 export default class ProductsController {
-  public async index({ response }: HttpContext) {
+  public async index({ auth, response }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
+      const user = auth.user!
+      await user.load('role') // Ensure role is loaded
+
       let products
 
       if (user.role.name === 'super_admin') {
@@ -21,9 +23,7 @@ export default class ProductsController {
           .orderBy('created_at', 'desc')
       }
 
-      return response.json({
-        products,
-      })
+      return response.json({ products })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch products',
@@ -75,8 +75,8 @@ export default class ProductsController {
       }
 
       // Load role if not already loaded
-      const allowedRoles = ['supplier']
-      if (!user.role) {
+      const allowedRoles = ['supplier' || 'super_admin']
+      if (!allowedRoles) {
         await user.load('role')
       }
 

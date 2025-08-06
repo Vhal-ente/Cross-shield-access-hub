@@ -2,7 +2,7 @@ import vine from '@vinejs/vine'
 
 // types/request.ts
 export interface CreateUnifiedRequestPayload {
-  type: 'medication' | 'beneficiary' | 'supplier' | 'health_professional'
+  type: 'Medication_Request'
   category?: string
   medication?: string
   quantity?: number
@@ -15,7 +15,7 @@ export interface CreateUnifiedRequestPayload {
 
 export const createUnifiedRequestValidator = vine.compile(
   vine.object({
-    type: vine.enum(['medication', 'beneficiary', 'supplier', 'health_professional']),
+    type: vine.enum(['medication', 'patient', 'supplier', 'health_professional']),
 
     description: vine.string().optional(),
     notes: vine.string().optional(),

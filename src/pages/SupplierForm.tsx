@@ -3,9 +3,11 @@ import { FaLocationDot } from 'react-icons/fa6';
 import { FiMail } from 'react-icons/fi';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface SupplierFormData {
-  fullName: string;
+  name: string;
   businessName: string;
   phone: string;
   email: string;
@@ -15,7 +17,7 @@ interface SupplierFormData {
 const SupplierForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<SupplierFormData>({
-    fullName: '',
+    name: '',
     businessName: '',
     phone: '',
     email: '',
@@ -29,10 +31,96 @@ const SupplierForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    // Add your submission logic here (e.g. API call)
+    // Validate form data
+    if (!formData.name) {
+      toast.error("Please enter your full name");
+      return;
+    }
+  
+    if (!formData.phone.match(/^\+?\d{10,15}$/)) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+  
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+  
+    if (!formData.location) {
+      toast.error("Please select a location");
+      return;
+    }
+
+    if (!formData.businessName) {
+      toast.error("Please enter your business name");
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        toast.error("You must be logged in");
+        return;
+      }
+  
+      const form = new FormData();
+      form.append("name", formData.name);
+      form.append("location", formData.location);
+      form.append("phone", formData.phone);
+      form.append("email", formData.email);
+      form.append("businessName", formData.businessName);
+  
+      // --- First: Send to Beneficiary Endpoint ---
+      const productRes = await fetch(`${API_BASE_URL}/products`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+      });
+  
+      if (!productRes.ok) {
+        const message = await productRes.text();
+        throw new Error(message);
+      }
+  
+      const productResult = await productRes.json();
+  
+      // --- Then: Send to Request Endpoint ---
+      const requestRes = await fetch(`${API_BASE_URL}/auth/requests`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "beneficiary",
+          category: "registration",
+          notes: "Registering a new beneficiary",
+          payload: {
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            location: formData.location,
+            businessName: formData.businessName,
+          },
+        }),
+      });
+  
+      if (!requestRes.ok) {
+        const message = await requestRes.text();
+        throw new Error(message);
+      }
+  
+      toast.success("Request submitted successfully");
+      setTimeout(() => navigate("/"), 1500);
+  
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong");
+    }
   };
 
   const handleClose = () => {
@@ -62,8 +150,8 @@ const SupplierForm = () => {
             <div>
               <label className="block mb-2 font-medium text-sm sm:text-base">Full Name</label>
               <input
-                name="fullName"
-                value={formData.fullName}
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-md px-3 sm:px-4 py-3 sm:py-2 outline-none text-base min-w-0"
                 placeholder="Full name"
@@ -91,7 +179,7 @@ const SupplierForm = () => {
                 Contact number (How we reach you)
               </label>
               <div className="flex border border-gray-300 rounded-md items-center px-2 min-w-0">
-                <span className="text-gray-600 text-sm pr-1">+370</span>
+                <span className="text-gray-600 text-sm pr-1">+234</span>
                 <input
                   type="tel"
                   name="phone"
@@ -135,6 +223,8 @@ const SupplierForm = () => {
                 <option>New York, United States</option>
                 <option>London, United Kingdom</option>
                 <option>Toronto, Canada</option>
+                <option>Sydney, Australia</option>
+                <option>Lagos, Nigeria</option>
               </select>
               <FaLocationDot className="absolute left-3 top-3 sm:top-3 text-gray-500" />
             </div>

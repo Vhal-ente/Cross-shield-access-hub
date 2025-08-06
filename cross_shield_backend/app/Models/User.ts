@@ -9,7 +9,7 @@ import type { HasMany, BelongsTo } from '@adonisjs/lucid/types/relations'
 import Role from '#models/role'
 import MedicationRequest from '#models/medication_request'
 import Product from '#models/product'
-import Beneficiary from '#models/beneficiary'
+import Beneficiary from '#models/beneficiary' // Adjust the path as necessary
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],

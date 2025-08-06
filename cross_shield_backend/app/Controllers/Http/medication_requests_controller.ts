@@ -57,7 +57,24 @@ export default class MedicationRequestsController {
             name: request.user?.role?.name || 'unknown_role',
           },
         },
-        medication: request.medications, // Use medications instead of medicationName
+        // 🔥 FORMAT MEDICATION AS READABLE STRING:
+        medication: (() => {
+          try {
+            const medications =
+              typeof request.medications === 'string'
+                ? JSON.parse(request.medications)
+                : request.medications
+
+            if (!medications || !Array.isArray(medications)) {
+              return 'No medications specified'
+            }
+
+            return medications.map((med) => `${med.name} (${med.quantity})`).join(', ')
+          } catch (error) {
+            console.error('Error parsing medication:', error)
+            return 'Invalid medication data'
+          }
+        })(),
         status: request.status,
         createdAt: request.createdAt,
         updatedAt: request.updatedAt,
