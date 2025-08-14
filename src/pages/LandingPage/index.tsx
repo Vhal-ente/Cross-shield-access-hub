@@ -24,7 +24,7 @@ export default function LandingPage() {
     />
       <PageWrapper>
         {/* Main content of the landing page goes here */}
-        <HeroSection />
+        <HeroSection onOpenRegisterModal={openRegisterModal} />
         <AboutPage />
         <TestimonialsSection />
         <JoinSection onOpenRegisterModal={openRegisterModal} />

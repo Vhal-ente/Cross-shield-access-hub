@@ -96,7 +96,7 @@ const Footer = () => {
                 <FaLinkedin size={18} />
               </a>
               <a
-                href="https://www.tiktok.com/@crossshield8?_t=ZM-8yC7lWatzwz&_r=1"
+                href="https://www.tiktok.com/@cross_shield1"
                 className="text-gray-600 hover:text-gray-800"
               >
                 <FaTiktok size={18} />

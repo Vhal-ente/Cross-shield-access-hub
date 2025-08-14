@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import MedicationRequest from '#models/medication_request'
 import User from '#models/user'
 import {
-  createMedicationRequestValidator,
+  // createMedicationRequestValidator,
   updateMedicationRequestValidator,
 } from '#validators/medication_request'
 
@@ -50,7 +50,7 @@ export default class MedicationRequestsController {
       // ✅ FIXED: Transform data to match frontend expectations
       const formattedRequests = requests.map((request) => ({
         id: request.id,
-        type: request.type || 'Medication Request',
+        type: 'Medication Request',
         requestedBy: {
           fullName: request.user?.fullName || 'Unknown User',
           role: {
@@ -110,15 +110,11 @@ export default class MedicationRequestsController {
       // ✅ FIXED: Proper handling of medications input
       let medications = request.input('medications')
 
-      // ✅ FIXED: Use proper logging (comma instead of concatenation)
-      console.log('Raw medications input:', medications)
-      console.log('Type of medications:', typeof medications)
-
       // Handle different input formats
       if (typeof medications === 'string') {
         try {
           medications = JSON.parse(medications)
-          console.log('Parsed medications:', medications)
+          // console.log('Parsed medications:', medications)
         } catch (err) {
           console.error('Failed to parse medications JSON:', err.message)
           return response.badRequest({
@@ -166,6 +162,12 @@ export default class MedicationRequestsController {
         }
       }
 
+      // ✅ Add default unit before saving
+      medications = medications.map((med) => ({
+        ...med,
+        unit: med.unit || 'Pack',
+      }))
+
       // ✅ Construct the payload
       const payload = {
         urgency: request.input('urgency'),
@@ -173,16 +175,26 @@ export default class MedicationRequestsController {
         beneficiaryId: request.input('beneficiaryId') || null,
       }
 
-      console.log('Payload being saved:', {
-        ...payload,
-        userId: user.id,
-        status: 'pending',
-        medications: medications, // Log the actual array
-        beneficiaryId: payload.beneficiaryId || null,
-        notes: payload.notes ?? null,
+      // Handle multiple images
+      const prescriptionImages = request.files('prescriptionImages', {
+        size: '5mb',
+        extnames: ['jpg', 'jpeg', 'png', 'webp'],
       })
 
-      const prescriptionImage = request.file('prescriptionImage')
+      const uploadedImageNames: string[] = []
+
+      for (const image of prescriptionImages) {
+        if (!image.isValid) {
+          console.error('Invalid file:', image.errors)
+          continue
+        }
+        try {
+          await image.move('uploads/prescriptions')
+          uploadedImageNames.push(image.fileName || '')
+        } catch (err) {
+          console.error('Error saving prescription image:', err)
+        }
+      }
 
       // ✅ Create the medication request
       const medicationRequest = await MedicationRequest.create({
@@ -192,22 +204,10 @@ export default class MedicationRequestsController {
         medications: medications, // Make sure this is the parsed array
         beneficiaryId: payload.beneficiaryId || null,
         notes: payload.notes ?? null,
+        prescriptionImages: uploadedImageNames,
       })
 
       console.log('Created medication request with ID:', medicationRequest.id)
-
-      // ✅ Handle optional image upload
-      if (prescriptionImage) {
-        try {
-          await prescriptionImage.move('./prescriptions')
-          medicationRequest.prescriptionImage = prescriptionImage.fileName || null
-          await medicationRequest.save()
-          console.log('Prescription image saved:', prescriptionImage.fileName)
-        } catch (imageError) {
-          console.error('Error saving prescription image:', imageError)
-          // Don't fail the entire request for image upload issues
-        }
-      }
 
       // ✅ Load relationships
       await medicationRequest.load('user')
@@ -247,6 +247,7 @@ export default class MedicationRequestsController {
       })
     }
   }
+
   public async show({ params, response, auth }: HttpContext) {
     try {
       const authenticatedUser = await auth.authenticate()

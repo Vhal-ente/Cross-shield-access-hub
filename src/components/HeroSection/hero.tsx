@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import { BsWhatsapp } from 'react-icons/bs';
 import healthcareImage from '@/assets/health care 1.png';
+// import { RegisterForm } from '@/components/auth/RegisterForm';
 
-const HeroSection = () => {
+interface HeroSectionProps {
+  onOpenRegisterModal: () => void;
+}
+
+const HeroSection: React.FC<HeroSectionProps> = ({ onOpenRegisterModal }) => {
+  // const [showRegister, setShowRegister] = useState(false);
   return (
     <div id='home' className="bg-[#F9FAFB] text-gray-900">
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-lg">
@@ -20,11 +26,13 @@ const HeroSection = () => {
             medicines—even in hard-to-reach areas.
           </p>
           <div className="flex flex-wrap gap-4">
-          <Link to ="/dashboard">
-            <button className="bg-[#106FB2] text-white px-5 py-2 rounded-full hover:bg-[#106FC1] transition">
+         
+            <button 
+            onClick={onOpenRegisterModal} // Trigger the register modal
+            className="bg-[#106FB2] text-white px-5 py-2 rounded-full hover:bg-[#106FC1] transition">
               Get Started →
             </button>
-            </Link>
+           
             <Link to="/medication-form">
             <button className="border border-gray-400 text-gray-800 px-5 py-2 rounded-full hover:bg-gray-100 transition">
               Request Medications
@@ -64,7 +72,7 @@ const HeroSection = () => {
       {/* WhatsApp Chat Icon */}
       <div className="fixed bottom-6 right-6">
         <a
-          href=" https://wa.me/2348104016554" // Replace with actual WhatsApp number
+          href="https://wa.me/2348104016554" // Replace with actual WhatsApp number
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 bg-[#106FB2] rounded-full px-4 py-2 shadow-md"

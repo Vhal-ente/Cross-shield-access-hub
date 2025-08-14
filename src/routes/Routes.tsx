@@ -9,7 +9,7 @@ import DiasporaForm from "../pages/DiasporaForm";
 import SupplierForm from "../pages/SupplierForm";
 import HealthcareForm from "../pages/HealthcareForm";
 import MedicationForm from "../pages/MedicationForm";
-import { LoginForm } from "../components/auth/LoginForm"; 
+// import { LoginForm } from "../components/auth/LoginForm"; 
 import TermsAndCondition from "@/pages/terms";
 import PrivacyPolicy from "@/pages/privacy";
 
@@ -18,7 +18,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginForm />} />
+      {/* <Route path="/login" element={<LoginForm />} /> */}
       
       {/* Registration forms - Public but could be role-specific */}
       <Route path="/diaspora-form" element={<DiasporaForm />} />
@@ -41,9 +41,9 @@ const AppRoutes = () => {
       <Route 
         path="/medication-form" 
         element={
-          <ProtectedRoute requiredRoles={['health_practitioner', 'supplier', 'super_admin']}>
             <MedicationForm />
-          </ProtectedRoute>
+          // <ProtectedRoute requiredRoles={['health_practitioner', 'supplier', 'super_admin']}>
+          // </ProtectedRoute>
         } 
       />
 

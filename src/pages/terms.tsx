@@ -26,7 +26,7 @@ const TermsSection = () => {
               <p className="text-gray-600 text-sm md:text-base font-semibold">
                 Company: Cross Shield Health Consulting, 
                 <br />
-                Awka, Anambra State,
+                Lagos State,
                 Nigeria
               </p>
             </div>
@@ -60,9 +60,9 @@ const TermsSection = () => {
                   We provide price comparisons, generate invoices, confirm
                   payments, and coordinate delivery to the customer.
                 </p>
-                <p className="mt-6 text-sm md:text-base text-gray-800">
+                {/* <p className="mt-6 text-sm md:text-base text-gray-800">
                 We do not operate as a pharmacy or dispense medications directly.{" "}
-                </p>
+                </p> */}
               </div>
 
               {/* 3. User Eligibility */}

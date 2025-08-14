@@ -87,8 +87,8 @@ export default class MedicationRequest extends BaseModel {
   @column()
   declare notes: string | null
 
-  @column()
-  declare prescriptionImage: string | null
+  @column({ columnName: 'prescription_images' })
+  public prescriptionImages!: string[] | null
 
   @column()
   declare status: 'pending' | 'in_progress' | 'fulfilled' | 'cancelled'

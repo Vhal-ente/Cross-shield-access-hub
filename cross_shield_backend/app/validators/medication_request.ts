@@ -1,5 +1,8 @@
 import vine from '@vinejs/vine'
-
+/**
+ * @file Medication Request Validators
+ * @description This file contains validators for creating and updating medication requests.
+ */
 export const createMedicationRequestValidator = vine.compile(
   vine.object({
     medications: vine
@@ -7,6 +10,7 @@ export const createMedicationRequestValidator = vine.compile(
         vine.object({
           name: vine.string(),
           quantity: vine.number().positive(),
+          unit: vine.string().optional(),
         })
       )
       .minLength(1),

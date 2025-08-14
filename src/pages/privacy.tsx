@@ -33,7 +33,7 @@ const PrivacySection = () => {
               <p className="text-gray-600 text-sm md:text-base font-semibold">
                 Company: Cross Shield Health Consulting,
                 <br />
-                Awka, Anambra State, Nigeria
+               Lagos State, Nigeria
               </p>
             </div>
 
