@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
-import User from './user.js'
-import Beneficiary from './beneficiary.js' // Update to the correct file name
+import User from '#models/user'
+import Beneficiary from '#models/beneficiary' // Update to the correct file name
 
 export default class MedicationRequest extends BaseModel {
   @column({ isPrimary: true })
@@ -87,14 +87,37 @@ export default class MedicationRequest extends BaseModel {
   @column()
   declare notes: string | null
 
-  @column({ columnName: 'prescription_images' })
-  public prescriptionImages!: string[] | null
+  @column({
+    columnName: 'prescription_images',
+    prepare: (value: any) => {
+      if (value === null || value === undefined) return null
+      return typeof value === 'string' ? value : JSON.stringify(value)
+    },
+    serialize: (value: any) => {
+      if (!value) return []
+      try {
+        return JSON.parse(value)
+      } catch {
+        return []
+      }
+    },
+  })
+  public prescriptionImages: string | string[] | null = null
 
   @column()
-  declare status: 'pending' | 'in_progress' | 'fulfilled' | 'cancelled'
+  declare status: 'pending' | 'in_progress' | 'assigned' | 'fulfilled' | 'cancelled'
 
   @column()
   declare assignedTo: number | null
+
+  @column({ columnName: 'fulfilled_by' })
+  public fulfilledBy?: number | null
+
+  @column.dateTime({ columnName: 'fulfilled_at' })
+  public fulfilledAt?: DateTime | null
+
+  @column({ columnName: 'fulfillment_note' })
+  public fulfillmentNote?: string | null
 
   @column()
   declare price: number | null

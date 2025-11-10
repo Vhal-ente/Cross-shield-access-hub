@@ -1,12 +1,15 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
-import User from './user.js'
+import Supplier from '#models/supplier'
 
 export default class Product extends BaseModel {
+  public static table = 'products'
+
   @column({ isPrimary: true })
   declare id: number
 
+  // link to supplier profile (not user)
   @column()
   declare supplierId: number
 
@@ -14,34 +17,16 @@ export default class Product extends BaseModel {
   declare name: string
 
   @column()
-  declare location: string
+  declare details: string | null
+
+  @column.dateTime()
+  declare expirationDate: DateTime | null
 
   @column()
-  declare phone: string
+  declare price: number | null
 
   @column()
-  declare email: string
-
-  @column()
-  declare businessName: string
-
-  // @column()
-  // declare description: string | null
-
-  // @column()
-  // declare price: number
-
-  // @column()
-  // declare quantity: number
-
-  // @column.date()
-  // declare expiryDate: DateTime
-
-  // @column()
-  // declare nafdacNumber: string | null
-
-  // @column()
-  // declare imageUrl: string | null
+  declare image: string | null
 
   @column()
   declare status: 'pending' | 'approved' | 'rejected'
@@ -52,8 +37,6 @@ export default class Product extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
-  @belongsTo(() => User, {
-    foreignKey: 'supplierId',
-  })
-  declare supplier: BelongsTo<typeof User>
+  @belongsTo(() => Supplier, { foreignKey: 'supplierId' })
+  declare supplier: BelongsTo<typeof Supplier>
 }

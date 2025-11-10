@@ -23,8 +23,8 @@ export const BeneficiaryDashboard = () => {
     switch (activeTab) {
       case "request":
         return <BeneficiaryRequestForm />;
-      case "special_order":
-        return <SpecialOrderForm />;
+      // case "special_order":
+        // return <SpecialOrderForm />;
       case "history":
         return <MyRequestsHistory />;
       default:

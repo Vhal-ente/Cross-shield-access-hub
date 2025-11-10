@@ -352,6 +352,25 @@ export const apiClient = {
     });
   },
 
+  forgotPassword: async (email: string) => {
+    return request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  resetPassword: async (token: string, password: string) => {
+    return request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return request<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
   getCurrentUser: () => request<{ user: User }>('/auth/me'),
 
   // Utility methods

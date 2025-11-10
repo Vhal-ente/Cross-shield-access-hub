@@ -851,18 +851,12 @@
 
 // User Roles Management Component 3
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { API_BASE_URL } from "@/lib/api";
+import React, { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { API_BASE_URL } from "@/lib/api"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -872,735 +866,577 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
-// Types
+interface Role {
+  id: number
+  displayName: string
+  description?: string | null
+}
+
 interface User {
-  id: number;
-  fullName: string;
-  email: string;
-  phone: string | null;
-  status: "pending" | "active" | "suspended" | "rejected";
-  location?: string | null;
-  licenseNumber?: string | null;
-  businessName?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  role: {
-    id: number;
-    displayName: string;
-    description?: string | null;
-  };
+  id: number
+  fullName: string
+  email: string
+  phone: string | null
+  status: "pending" | "active" | "suspended" | "rejected"
+  location?: string | null
+  licenseNumber?: string | null
+  businessName?: string | null
+  createdAt: string
+  updatedAt: string
+  role?: Role | null
 }
 
 interface UserStats {
-  total_users: number;
-  active_users: number;
-  pending_users: number;
-  suspended_users: number;
-}
-
-interface Role {
-  id: number;
-  displayName: string;
-  description?: string | null;
+  total_users: number
+  active_users: number
+  pending_users: number
+  suspended_users: number
 }
 
 interface UserActivity {
-  userId: number;
-  lastLogin: string;
-  note?: string;
+  userId: number
+  lastLogin: string
+  note?: string
 }
 
 interface ApiResponse<T = any> {
-  success: boolean;
-  message: string;
+  success: boolean
+  message: string
   data:
     | {
         meta?: {
-          total: number;
-          perPage: number;
-          currentPage: number;
-          lastPage: number;
-          firstPage: number;
-          firstPageUrl: string;
-          lastPageUrl: string;
-          nextPageUrl: string | null;
-          previousPageUrl: string | null;
-        };
-        data?: T; // The actual data can be here
-        user?: User; // Or sometimes it's in a user property
-        users?: User[]; // Or sometimes it's in a users property
+          total: number
+          perPage: number
+          currentPage: number
+          lastPage: number
+          firstPage: number
+          firstPageUrl: string
+          lastPageUrl: string
+          nextPageUrl: string | null
+          previousPageUrl: string | null
+        }
+        data?: T
+        user?: User
+        users?: User[]
       }
-    | T; // Or sometimes data is the object directly
+    | T
 }
 
-// API Service
+type AnyObj = Record<string, unknown>
+
+const normalizeStats = (raw: AnyObj): UserStats => {
+  const src: AnyObj = (raw && (raw as AnyObj).totals) ?? (raw as AnyObj)?.stats ?? (raw as AnyObj)?.counts ?? (raw as AnyObj)?.summary ?? raw ?? {}
+  const toNum = (v: unknown) => Number(v ?? 0)
+  return {
+    total_users: toNum((src as AnyObj).total_users ?? (src as AnyObj).totalUsers ?? (src as AnyObj).total),
+    active_users: toNum((src as AnyObj).active_users ?? (src as AnyObj).activeUsers ?? (src as AnyObj).active),
+    pending_users: toNum(
+      (src as AnyObj).pending_users ?? (src as AnyObj).pendingUsers ?? (src as AnyObj).pending ?? (src as AnyObj).pendingApprovals,
+    ),
+    suspended_users: toNum((src as AnyObj).suspended_users ?? (src as AnyObj).suspendedUsers ?? (src as AnyObj).suspended),
+  }
+}
+
 const userService = {
-  getAllUsers: async (
-    page: number = 1,
-    limit: number = 10
-  ): Promise<{ users: User[]; stats: UserStats; meta: any }> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found. Please log in.");
+  getAllUsers: async (page: number = 1, limit: number = 10): Promise<{ users: User[]; meta: any }> => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found. Please log in.")
+
+    const response = await fetch(`${API_BASE_URL}/super-admin/users?page=${page}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (response.status === 401) throw new Error("Unauthorized. Please log in again.")
+
+    const contentType = response.headers.get("content-type") || ""
+    const responseText = await response.text()
+
+    if (!response.ok) throw new Error(`Failed to fetch users: ${responseText || "Unknown error"}`)
+    if (!contentType.includes("application/json")) throw new Error("Server returned non-JSON response")
+    if (!responseText) throw new Error("Empty response from server")
+
+    const data = JSON.parse(responseText)
+    const usersArray = Array.isArray(data.data?.data) ? (data.data.data as User[]) : []
+    const meta = data.data?.meta || {
+      total: usersArray.length,
+      perPage: limit,
+      currentPage: page,
+      lastPage: 1,
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/users?page=${page}&limit=${limit}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    if (response.status === 401) {
-      // localStorage.removeItem('auth_token');
-      throw new Error("Unauthorized. Please log in again.");
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch users: ${responseText || "Unknown error"}`
-      );
-    }
-
-    if (!contentType.includes("application/json")) {
-      throw new Error("Server returned non-JSON response");
-    }
-
-    if (!responseText) {
-      throw new Error("Empty response from server");
-    }
-
-    try {
-      const data = JSON.parse(responseText);
-
-      // Extract users from data.data (which is the array of users)
-      const usersArray = Array.isArray(data.data.data) ? data.data.data : [];
-
-      return {
-        users: usersArray,
-        stats: {
-          total_users: data.data.meta.total,
-          active_users: usersArray.filter((u) => u.status === "active").length,
-          pending_users: usersArray.filter((u) => u.status === "pending")
-            .length,
-          suspended_users: usersArray.filter((u) => u.status === "suspended")
-            .length
-        },
-        meta: data.data.meta
-      };
-    } catch (error) {
-      throw new Error("Invalid JSON response from server");
-    }
+    return { users: usersArray, meta }
   },
 
-  getPendingRegistrations: async (
-    page: number = 1,
-    limit: number = 10
-  ): Promise<{ users: User[]; stats: UserStats; meta: any }> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
-  
+  getPendingRegistrations: async (page: number = 1, limit: number = 10): Promise<{ users: User[]; meta: any }> => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
+
     const response = await fetch(
       `${API_BASE_URL}/super-admin/pending-registrations?page=${page}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-  
+          "Content-Type": "application/json",
+        },
+      },
+    )
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to fetch pending registrations: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to fetch pending registrations: ${errorText}`)
     }
-  
-    const data = await response.json();
-  
-    let usersArray = [];
-    let meta = { total: 0, lastPage: 1 };
-    let stats = {
-      total_users: 0,
-      active_users: 0,
-      pending_users: 0,
-      suspended_users: 0
-    };
-  
+
+    const data = await response.json()
+
+    let usersArray: User[] = []
+    let meta = { total: 0, lastPage: 1, perPage: limit, currentPage: page }
+
     if (data.data) {
       if (Array.isArray(data.data.users)) {
-        usersArray = data.data.users;
-        meta = data.data.meta || meta;
-        stats = data.data.stats || stats;
+        usersArray = data.data.users
+        meta = { ...meta, ...(data.data.meta || {}) }
       }
     }
-  
-    return {
-      users: usersArray,
-      stats,
-      meta
-    };
+
+    return { users: usersArray, meta }
   },
-  
+
   getRoles: async (): Promise<Role[]> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
     const response = await fetch(`${API_BASE_URL}/super-admin/roles`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-        // "Content-Type": "application/json"
-      }
-    });
+      headers: { Authorization: `Bearer ${token}` },
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to fetch roles: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to fetch roles: ${errorText}`)
     }
-    if (response.status === 401) {
-      throw new Error("Unauthorized. Please log in again.");
-      // localStorage.removeItem('auth_token')
-    }
+    if (response.status === 401) throw new Error("Unauthorized. Please log in again.")
 
-    const data: ApiResponse<Role[]> = await response.json();
-    return data.data.data; // Return only the array of roles
+    const data: ApiResponse<Role[]> = await response.json()
+    return (data as any)?.data?.data || []
   },
 
-  approveRegistration: async (
-    userId: number,
-    roleId?: number
-  ): Promise<User> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+  approveRegistration: async (userId: number, roleId?: number): Promise<User> => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/registrations/${userId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ action: "approve", roleId })
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/super-admin/registrations/${userId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "approve", roleId })
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to approve registration: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to approve registration: ${errorText}`)
     }
 
-    const data = await response.json();
-
-    // Handle different possible response structures
+    const data = await response.json()
     if (data.data) {
-      if (data.data.user) {
-        // Structure: { data: { user: {...} } }
-        return data.data.user;
-      } else if (data.data.data) {
-        // Structure: { data: { data: {...} } }
-        return data.data.data;
-      } else {
-        // Structure: { data: {...} } - data.data is the user object itself
-        return data.data;
-      }
+      if (data.data.user) return data.data.user as User
+      if (data.data.data) return data.data.data as User
+      return data.data as User
     }
-
-    // Fallback: return the data as is
-    return data;
+    return data as User
   },
 
   rejectRegistration: async (userId: number): Promise<User> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/registrations/${userId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ action: "reject" })
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/super-admin/registrations/${userId}/registration`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "reject" }),
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to reject registration: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to reject registration: ${errorText}`)
     }
 
-    const data = await response.json();
-
-    // Handle different possible response structures
+    const data = await response.json()
     if (data.data) {
-      if (data.data.user) {
-        return data.data.user;
-      } else if (data.data.data) {
-        return data.data.data;
-      } else {
-        return data.data;
-      }
+      if (data.data.user) return data.data.user as User
+      if (data.data.data) return data.data.data as User
+      return data.data as User
     }
-
-    return data;
+    return data as User
   },
 
   revokeUserAccess: async (userId: number): Promise<User> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/users/${userId}/revoke`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${userId}/revoke`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to revoke user access: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to revoke user access: ${errorText}`)
     }
 
-    const data = await response.json();
-
-    // Handle different possible response structures
+    const data = await response.json()
     if (data.data) {
-      if (data.data.user) {
-        return data.data.user;
-      } else if (data.data.data) {
-        return data.data.data;
-      } else {
-        return data.data;
-      }
+      if (data.data.user) return data.data.user as User
+      if (data.data.data) return data.data.data as User
+      return data.data as User
     }
-
-    // Ensure a return value in case of unexpected structure
-    return data as User; // Cast to User type
+    return data as User
   },
 
   restoreUserAccess: async (userId: number): Promise<User> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/users/${userId}/restore`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${userId}/restore`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to restore user access: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to restore user access: ${errorText}`)
     }
 
-    const data = await response.json();
-
-    // Handle different possible response structures
+    const data = await response.json()
     if (data.data) {
-      if (data.data.user) {
-        return data.data.user;
-      } else if (data.data.data) {
-        return data.data.data;
-      } else {
-        return data.data;
-      }
+      if (data.data.user) return data.data.user as User
+      if (data.data.data) return data.data.data as User
+      return data.data as User
     }
-
-    return data;
+    return data as User
   },
 
   getUserActivity: async (userId: number): Promise<UserActivity> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
 
-    const response = await fetch(
-      `${API_BASE_URL}/super-admin/users/${userId}/activity`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/super-admin/users/${userId}/activity`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to fetch user activity: ${errorText}`);
+      const errorText = await response.text().catch(() => "Unknown error")
+      throw new Error(`Failed to fetch user activity: ${errorText}`)
     }
 
-    const data = await response.json();
-
-    // Handle different possible response structures
+    const data = await response.json()
     if (data.data) {
-      if (data.data.data) {
-        return data.data.data;
-      } else {
-        return data.data;
-      }
+      if (data.data.data) return data.data.data as UserActivity
+      return data.data as UserActivity
     }
-
-    return data;
+    return data as UserActivity
   },
 
   getStats: async (): Promise<UserStats> => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      throw new Error("No authentication token found");
+    const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No authentication token found")
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     }
 
-    const response = await fetch(`${API_BASE_URL}/super-admin/stats`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // "Content-Type": "application/json"
+    const fetchJson = async (url: string) => {
+      const res = await fetch(url, { headers })
+      const txt = await res.text()
+      let json: any = {}
+      try {
+        json = JSON.parse(txt)
+      } catch {
+        json = {}
       }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      throw new Error(`Failed to fetch stats: ${errorText}`);
+      return { ok: res.ok, json }
     }
 
-    const data = await response.json();
+    const tryStats = async (): Promise<UserStats> => {
+      const { ok, json } = await fetchJson(`${API_BASE_URL}/super-admin/stats`)
+      if (!ok) return { total_users: 0, active_users: 0, pending_users: 0, suspended_users: 0 }
+      const raw = json?.data?.data ?? json?.data ?? json
+      return normalizeStats(raw || {})
+    }
 
-    // Handle different possible response structures
-    if (data.data) {
-      if (data.data.data) {
-        return data.data.data;
-      } else {
-        return data.data;
+    const fallbackTotals = async (): Promise<UserStats> => {
+      const [all, active, suspended, pending] = await Promise.all([
+        fetchJson(`${API_BASE_URL}/super-admin/users?page=1&limit=1`),
+        fetchJson(`${API_BASE_URL}/super-admin/users?status=active&page=1&limit=1`),
+        fetchJson(`${API_BASE_URL}/super-admin/users?status=suspended&page=1&limit=1`),
+        fetchJson(`${API_BASE_URL}/super-admin/pending-registrations?page=1&limit=1`),
+      ])
+      const pickTotal = (obj: any) => obj?.data?.meta?.total ?? obj?.data?.total ?? obj?.meta?.total ?? 0
+      return {
+        total_users: Number(pickTotal(all.json)),
+        active_users: Number(pickTotal(active.json)),
+        pending_users: Number(pickTotal(pending.json)),
+        suspended_users: Number(pickTotal(suspended.json)),
       }
     }
 
-    return data;
-  }
-};
+    const s = await tryStats()
+    const sum = s.total_users + s.active_users + s.pending_users + s.suspended_users
+    if (!Number.isFinite(sum) || sum === 0) return await fallbackTotals()
+    return s
+  },
+}
 
+export default function UsersRolesManagement() {
+  const [users, setUsers] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [userActivity, setUserActivity] = useState<UserActivity | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
+  const [showUserDetails, setShowUserDetails] = useState(false)
+  const [viewMode, setViewMode] = useState<"all" | "pending">("all")
 
-export const UsersRolesManagement = () => {
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [stats, setStats] = useState<UserStats>({
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+
+  const [globalStats, setGlobalStats] = useState<UserStats>({
     total_users: 0,
     active_users: 0,
     pending_users: 0,
-    suspended_users: 0
-  });
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [userActivity, setUserActivity] = useState<UserActivity | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
-  const [showUserDetails, setShowUserDetails] = useState(false);
-  const [viewMode, setViewMode] = useState<"all" | "pending">("all");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const [allStats, setAllStats] = useState<UserStats | null>(null);
+    suspended_users: 0,
+  })
 
   const fetchData = async () => {
     try {
-      setLoading(true);
-      setError(null);
-  
-      const response =
-        viewMode === "pending"
-          ? await userService.getPendingRegistrations(page, 10)
-          : await userService.getAllUsers(page, 10);
-  
-      const usersArray = Array.isArray(response.users) ? response.users : [];
-      setUsers(usersArray);
-  
-      if (viewMode === "all") {
-        setAllStats(response.stats || null);
-        setStats(response.stats || null);
-      } else {
-        setStats(allStats); // use the cached version
-      }
-  
-      setTotalPages(response.meta?.lastPage ?? 1);
-    } catch (error: any) {
-      const message = error.message || "Failed to load data. Please try again.";
-      setError(message);
-      toast.error(message);
+      setLoading(true)
+      setError(null)
+
+      const response = viewMode === "pending" ? await userService.getPendingRegistrations(page, pageSize) : await userService.getAllUsers(page, pageSize)
+
+      const usersArray = Array.isArray(response.users) ? response.users : []
+      setUsers(usersArray)
+
+      const meta = response.meta || {}
+      const last = meta.lastPage ?? Math.max(1, Math.ceil((meta.total ?? usersArray.length) / pageSize))
+      const current = meta.currentPage ?? page
+      const total = meta.total ?? usersArray.length
+
+      setTotalPages(last)
+      setTotalItems(total)
+      if (current > last) setPage(last)
+    } catch (err: any) {
+      const message = err.message || "Failed to load data. Please try again."
+      setError(message)
+      toast.error(message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-  
+  }
+
+  const fetchGlobalStats = async () => {
+    try {
+      const s = await userService.getStats()
+      setGlobalStats(s)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load totals.")
+    }
+  }
 
   const fetchRoles = async () => {
     try {
-      const roles = await userService.getRoles();
-      setRoles(roles);
-    } catch (error: any) {
-      console.error("Error fetching roles:", error);
-      toast.error(error.message || "Failed to load roles. Please try again.");
+      const rolesRes = await userService.getRoles()
+      setRoles(rolesRes)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load roles. Please try again.")
     }
-  };
-// On component mount and viewMode/page change: fetch users/stats
-useEffect(() => {
-  fetchData();
-}, [viewMode, page]);
+  }
 
-// Only fetch roles once on initial mount
-useEffect(() => {
-  fetchRoles();
-}, []);
+  useEffect(() => {
+    fetchData()
+  }, [viewMode, page, pageSize])
+
+  useEffect(() => {
+    fetchGlobalStats()
+    fetchRoles()
+  }, [])
 
   const fetchUserActivity = async (userId: number) => {
     try {
-      const activity = await userService.getUserActivity(userId);
-      setUserActivity(activity);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load user activity.");
+      const activity = await userService.getUserActivity(userId)
+      setUserActivity(activity)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load user activity.")
     }
-  };
+  }
 
   const handleApproveRegistration = async (userId: number) => {
     try {
-      setActionLoading(userId);
-      const roleId = selectedRoleId ? parseInt(selectedRoleId) : undefined;
-      const updatedUser = await userService.approveRegistration(userId, roleId);
+      setActionLoading(userId)
+      const roleId = selectedRoleId ? parseInt(selectedRoleId) : undefined
+      const updatedUser = await userService.approveRegistration(userId, roleId)
 
-      setUsers(users.filter((user) => user.id !== userId));
-      setStats((prev) => ({
-        ...prev,
-        pending_users: Math.max(0, prev.pending_users - 1),
-        active_users: prev.active_users + 1
-      }));
-      toast.success(
-        `User ${updatedUser.fullName} has been approved and can now login.`
-      );
-    } catch (error: any) {
-      toast.error(
-        error.message || "Failed to approve registration. Please try again."
-      );
+      setUsers(users.filter((u) => u.id !== userId))
+      toast.success(`User ${updatedUser.fullName} has been approved and can now login.`)
+      await fetchGlobalStats()
+      setSelectedRoleId(null)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to approve registration. Please try again.")
     } finally {
-      setActionLoading(null);
-      setSelectedRoleId(null);
+      setActionLoading(null)
     }
-  };
+  }
 
   const handleRejectRegistration = async (userId: number) => {
     try {
-      setActionLoading(userId);
-      const user = users.find((u) => u.id === userId);
-      const updatedUser = await userService.rejectRegistration(userId);
+      setActionLoading(userId)
+      const user = users.find((u) => u.id === userId)
+      await userService.rejectRegistration(userId)
 
-      setUsers(users.filter((user) => user.id !== userId));
-      setStats((prev) => ({
-        ...prev,
-        pending_users: Math.max(0, prev.pending_users - 1)
-      }));
-      toast.success(`Registration for ${user?.fullName} has been rejected.`);
-    } catch (error: any) {
-      toast.error(
-        error.message || "Failed to reject registration. Please try again."
-      );
+      setUsers(users.filter((u) => u.id !== userId))
+      toast.success(`Registration for ${user?.fullName} has been rejected.`)
+      await fetchGlobalStats()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reject registration. Please try again.")
     } finally {
-      setActionLoading(null);
+      setActionLoading(null)
     }
-  };
+  }
 
   const handleRevokeAccess = async (userId: number) => {
     try {
-      setActionLoading(userId);
-      const updatedUser = await userService.revokeUserAccess(userId);
+      setActionLoading(userId)
+      const updatedUser = await userService.revokeUserAccess(userId)
 
-      setUsers(
-        users.map((user) =>
-          user.id === userId ? { ...user, status: "suspended" } : user
-        )
-      );
-      setStats((prev) => ({
-        ...prev,
-        active_users: Math.max(0, prev.active_users - 1),
-        suspended_users: prev.suspended_users + 1
-      }));
-      toast.success(`Access revoked for ${updatedUser.fullName}.`);
-    } catch (error: any) {
-      toast.error(
-        error.message || "Failed to revoke user access. Please try again."
-      );
+      setUsers(users.map((u) => (u.id === userId ? { ...u, status: "suspended" } : u)))
+      toast.success(`Access revoked for ${updatedUser.fullName}.`)
+      await fetchGlobalStats()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to revoke user access. Please try again.")
     } finally {
-      setActionLoading(null);
+      setActionLoading(null)
     }
-  };
+  }
 
   const handleRestoreAccess = async (userId: number) => {
     try {
-      setActionLoading(userId);
-      const updatedUser = await userService.restoreUserAccess(userId);
+      setActionLoading(userId)
+      const updatedUser = await userService.restoreUserAccess(userId)
 
-      setUsers(
-        users.map((user) =>
-          user.id === userId ? { ...user, status: "active" } : user
-        )
-      );
-      setStats((prev) => ({
-        ...prev,
-        suspended_users: Math.max(0, prev.suspended_users - 1),
-        active_users: prev.active_users + 1
-      }));
-      toast.success(`Access restored for ${updatedUser.fullName}.`);
-    } catch (error: any) {
-      toast.error(
-        error.message || "Failed to restore user access. Please try again."
-      );
+      setUsers(users.map((u) => (u.id === userId ? { ...u, status: "active" } : u)))
+      toast.success(`Access restored for ${updatedUser.fullName}.`)
+      await fetchGlobalStats()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to restore user access. Please try again.")
     } finally {
-      setActionLoading(null);
+      setActionLoading(null)
     }
-  };
+  }
 
   const handleViewUser = (user: User) => {
-    setSelectedUser(user);
-    setUserActivity(null);
-    fetchUserActivity(user.id);
-    setShowUserDetails(true);
-  };
+    setSelectedUser(user)
+    setUserActivity(null)
+    fetchUserActivity(user.id)
+    setShowUserDetails(true)
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>
       case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
       case "suspended":
-        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>
       case "rejected":
-        return <Badge className="bg-gray-100 text-gray-800">Rejected</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Rejected</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status}</Badge>
     }
-  };
+  }
 
-  const getRoleBadge = (roleName: string) => {
-    const displayName = roleName
-      .replace("_", " ")
-      .replace(/\b\w/g, (l) => l.toUpperCase());
+  const getRoleBadge = (roleName?: string | null) => {
+    if (!roleName) return <Badge variant="outline">No role</Badge>
+    const displayName = roleName.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())
 
     switch (roleName) {
       case "health_practitioner":
-        return (
-          <Badge className="bg-blue-100 text-blue-800">{displayName}</Badge>
-        );
+        return <Badge className="bg-blue-100 text-blue-800">{displayName}</Badge>
       case "supplier":
-        return (
-          <Badge className="bg-green-100 text-green-800">{displayName}</Badge>
-        );
+        return <Badge className="bg-green-100 text-green-800">{displayName}</Badge>
       case "diaspora":
-        return (
-          <Badge className="bg-purple-100 text-purple-800">{displayName}</Badge>
-        );
+        return <Badge className="bg-purple-100 text-purple-800">{displayName}</Badge>
       case "beneficiary":
-        return (
-          <Badge className="bg-orange-100 text-orange-800">{displayName}</Badge>
-        );
+        return <Badge className="bg-orange-100 text-orange-800">{displayName}</Badge>
       case "super_admin":
-        return <Badge className="bg-red-100 text-red-800">{displayName}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{displayName}</Badge>
       default:
-        return <Badge variant="outline">{displayName}</Badge>;
+        return <Badge variant="outline">{displayName}</Badge>
     }
-  };
+  }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
 
   const renderActionButtons = (user: User) => {
-    const isLoading = actionLoading === user.id;
+    const isLoading = actionLoading === user.id
 
     return (
-      <div className="flex space-x-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleViewUser(user)}
-          disabled={isLoading}
-        >
+      <div className="flex space-x-2 action-buttons">
+        <Button size="sm" variant="outline" onClick={() => handleViewUser(user)} disabled={isLoading}>
           View
         </Button>
+
         {user.status === "pending" && (
           <>
             {user.role ? (
-              // ✅ Role already exists — just approve
-              <Button
-                size="sm"
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleApproveRegistration(user.id)}
-              >
+              <Button size="sm" disabled={isLoading} className="bg-green-600 hover:bg-green-700" onClick={() => handleApproveRegistration(user.id)}>
                 {isLoading ? "..." : "Approve"}
               </Button>
             ) : (
-              // 🟡 No role assigned yet — show role selector dialog
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    disabled={isLoading}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
+                  <Button size="sm" disabled={isLoading} className="bg-green-600 hover:bg-green-700">
                     {isLoading ? "..." : "Approve"}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Approve Registration</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Approve {user.fullName}'s registration and assign a role.
-                    </AlertDialogDescription>
+                    <AlertDialogDescription>Approve {user.fullName}'s registration and assign a role.</AlertDialogDescription>
                   </AlertDialogHeader>
                   <div className="my-4">
-                    <Select
-                      onValueChange={setSelectedRoleId}
-                      defaultValue={selectedRoleId || undefined}
-                    >
+                    <Select onValueChange={setSelectedRoleId} defaultValue={selectedRoleId || undefined}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                       <SelectContent>
                         {roles?.map((role) => (
                           <SelectItem key={role.id} value={role.id.toString()}>
-                            {role.displayName
-                              .replace("_", " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            {role.displayName.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1608,11 +1444,7 @@ useEffect(() => {
                   </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleApproveRegistration(user.id)}
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={!selectedRoleId}
-                    >
+                    <AlertDialogAction onClick={() => handleApproveRegistration(user.id)} className="bg-green-600 hover:bg-green-700" disabled={!selectedRoleId}>
                       Approve Registration
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -1632,18 +1464,11 @@ useEffect(() => {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Reject Registration</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to reject {user.fullName}'s
-                  registration? They will not be able to login or access the
-                  system.
-                </AlertDialogDescription>
+                <AlertDialogDescription>Are you sure you want to reject {user.fullName}'s registration</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleRejectRegistration(user.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
+                <AlertDialogAction onClick={() => handleRejectRegistration(user.id)} className="bg-red-600 hover:bg-red-700">
                   Reject Registration
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -1654,29 +1479,18 @@ useEffect(() => {
         {user.status === "active" && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isLoading}
-                className="text-red-600 border-red-600 hover:bg-red-50"
-              >
+              <Button size="sm" variant="outline" disabled={isLoading} className="text-red-600 border-red-600 hover:bg-red-50">
                 Revoke
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Revoke User Access</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to revoke access for {user.fullName}?
-                  They will not be able to login until access is restored.
-                </AlertDialogDescription>
+                <AlertDialogDescription>Revoke access for {user.fullName}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleRevokeAccess(user.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
+                <AlertDialogAction onClick={() => handleRevokeAccess(user.id)} className="bg-red-600 hover:bg-red-700">
                   Revoke Access
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -1685,25 +1499,20 @@ useEffect(() => {
         )}
 
         {user.status === "suspended" && (
-          <Button
-            size="sm"
-            onClick={() => handleRestoreAccess(user.id)}
-            disabled={isLoading}
-            className="bg-green-600 hover:bg-green-700"
-          >
+          <Button size="sm" onClick={() => handleRestoreAccess(user.id)} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
             {isLoading ? "..." : "Restore"}
           </Button>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-red-600">{error}</div>
       </div>
-    );
+    )
   }
 
   if (loading) {
@@ -1711,20 +1520,44 @@ useEffect(() => {
       <div className="flex items-center justify-center h-64">
         <div className="text-lg">Loading users...</div>
       </div>
-    );
+    )
   }
+
+  const startItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1
+  const endItem = Math.min(page * pageSize, totalItems)
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Users & Roles Management</h3>
-        <div className="flex space-x-2">
+        <div className="flex gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Rows per page</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(parseInt(v))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-[90px]">
+                <SelectValue placeholder="Page size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button
             variant={viewMode === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => {
-              setViewMode("all");
-              setPage(1);
+              setViewMode("all")
+              setPage(1)
             }}
           >
             All Users
@@ -1733,13 +1566,20 @@ useEffect(() => {
             variant={viewMode === "pending" ? "default" : "outline"}
             size="sm"
             onClick={() => {
-              setViewMode("pending");
-              setPage(1);
+              setViewMode("pending")
+              setPage(1)
             }}
           >
-            Pending ({stats.pending_users})
+            Pending ({(globalStats?.pending_users ?? 0).toLocaleString()})
           </Button>
-          <Button variant="outline" size="sm" onClick={fetchData}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchData()
+              fetchGlobalStats()
+            }}
+          >
             Refresh
           </Button>
         </div>
@@ -1748,33 +1588,25 @@ useEffect(() => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">
-              {stats?.total_users}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{(globalStats?.total_users ?? 0).toLocaleString()}</div>
             <div className="text-sm text-gray-600">Total Users</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {stats?.active_users}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{(globalStats?.active_users ?? 0).toLocaleString()}</div>
             <div className="text-sm text-gray-600">Active Users</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats?.pending_users}
-            </div>
+            <div className="text-2xl font-bold text-yellow-600">{(globalStats?.pending_users ?? 0).toLocaleString()}</div>
             <div className="text-sm text-gray-600">Pending Approvals</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">
-              {stats?.suspended_users}
-            </div>
+            <div className="text-2xl font-bold text-red-600">{(globalStats?.suspended_users ?? 0).toLocaleString()}</div>
             <div className="text-sm text-gray-600">Suspended Users</div>
           </CardContent>
         </Card>
@@ -1782,33 +1614,9 @@ useEffect(() => {
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            {viewMode === "pending" ? "Pending Registrations" : "All Users"} (
-            {users.length ?? 0})
-          </CardTitle>
+          <CardTitle>{viewMode === "pending" ? "Pending Registrations" : "All Users"} ({users.length ?? 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between mb-4">
-            <div>Page {page}</div>
-            <div className="space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page === 1}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page === totalPages}
-                onClick={() => setPage((prev) => prev + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -1825,57 +1633,69 @@ useEffect(() => {
               </thead>
               <tbody>
                 {Array.isArray(users) &&
-                  users.map((user) => {
-                    return (
-                      <tr
-                        key={user.id}
-                        className="border-b hover:bg-gray-50 cursor-pointer"
-                        onClick={(e) => {
-                          if (
-                            (e.target as HTMLElement).closest(".action-buttons")
-                          )
-                            return;
-                          handleViewUser(user);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleViewUser(user);
-                        }}
-                      >
-                        <td className="p-3 font-medium">{user.fullName}</td>
-                        <td className="p-3">{user.email}</td>
-                        <td className="p-3">{user.phone || "N/A"}</td>
-                        <td className="p-3">
-                          {getRoleBadge(user.role.displayName)}
-                        </td>
-                        <td className="p-3">{getStatusBadge(user.status)}</td>
-                        <td className="p-3">{user.location || "N/A"}</td>
-                        <td className="p-3">{formatDate(user.createdAt)}</td>
-                        <td className="p-3 action-buttons">
-                          {renderActionButtons(user)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  users.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest(".action-buttons")) return
+                        handleViewUser(user)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleViewUser(user)
+                      }}
+                    >
+                      <td className="p-3 font-medium">{user.fullName}</td>
+                      <td className="p-3">{user.email}</td>
+                      <td className="p-3">{user.phone || "N/A"}</td>
+                      <td className="p-3">{getRoleBadge(user.role?.displayName)}</td>
+                      <td className="p-3">{getStatusBadge(user.status)}</td>
+                      <td className="p-3">{user.location || "N/A"}</td>
+                      <td className="p-3">{formatDate(user.createdAt)}</td>
+                      <td className="p-3">{renderActionButtons(user)}</td>
+                    </tr>
+                  ))}
                 {Array.isArray(users) && users.length === 0 && (
                   <tr>
                     <td colSpan={8} className="text-center py-8 text-gray-500">
-                      {viewMode === "pending"
-                        ? "No pending registrations"
-                        : "No users found"}
+                      {viewMode === "pending" ? "No pending registrations" : "No users found"}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-600">
+              {totalItems > 0 ? `Showing ${startItem} to ${endItem} of ${totalItems.toLocaleString()}` : "No records"}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(1)}>
+                First
+              </Button>
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>
+                Previous
+              </Button>
+              <span className="text-sm">{`Page ${page} of ${totalPages}`}</span>
+              <Button size="sm" variant="outline" disabled={page === totalPages || totalPages === 0} onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}>
+                Next
+              </Button>
+              <Button size="sm" variant="outline" disabled={page === totalPages || totalPages === 0} onClick={() => setPage(totalPages)}>
+                Last
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* User Details Modal */}
       {selectedUser && (
-        <AlertDialog open={showUserDetails} onOpenChange={setShowUserDetails}>
+        <AlertDialog open={showUserDetails} onOpenChange={(open) => {
+          setShowUserDetails(open)
+          if (!open) setSelectedRoleId(null)
+        }}>
           <AlertDialogContent className="max-w-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle>User Details</AlertDialogTitle>
@@ -1896,7 +1716,7 @@ useEffect(() => {
                 </div>
                 <div>
                   <label className="font-semibold">Role:</label>
-                  <p>{getRoleBadge(selectedUser.role.displayName)}</p>
+                  <p>{getRoleBadge(selectedUser.role?.displayName)}</p>
                 </div>
                 <div>
                   <label className="font-semibold">Status:</label>
@@ -1925,10 +1745,7 @@ useEffect(() => {
                 {userActivity && (
                   <div className="col-span-2">
                     <label className="font-semibold">Last Activity:</label>
-                    <p>
-                      {formatDate(userActivity.lastLogin)}{" "}
-                      {/* {userActivity.note ? `(${userActivity.note})` : ""} */}
-                    </p>
+                    <p>{formatDate(userActivity.lastLogin)}</p>
                   </div>
                 )}
               </div>
@@ -1940,5 +1757,5 @@ useEffect(() => {
         </AlertDialog>
       )}
     </div>
-  );
-};
+  )
+}

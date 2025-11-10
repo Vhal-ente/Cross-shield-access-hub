@@ -37,6 +37,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<{ message: string; user: User; }>;
   logout: () => Promise<void>;
+  forgotPassword?: (email: string) => Promise<void>;
+  resetPassword?: (token: string, newPassword: string) => Promise<void>;
+  changePassword?: (currentPassword: string, newPassword: string) => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   
   // New role-based helper methods
@@ -169,6 +172,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      await apiClient.forgotPassword(email);
+    } catch (error) {
+      console.error('Forgot password failed:', error);
+      throw error;
+    }
+  };
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      await apiClient.resetPassword(token, newPassword);
+    } catch (error) {
+      console.error('Reset password failed:', error);
+      throw error;
+    }
+  };
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      await apiClient.changePassword(currentPassword, newPassword);
+    } catch (error) {
+      console.error('Change password failed:', error);
+      throw error;
+    }
+  };
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser: User = { ...user, ...userData };
@@ -213,6 +240,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
+    changePassword,
     updateUser,
     hasRole,
     hasPermission,

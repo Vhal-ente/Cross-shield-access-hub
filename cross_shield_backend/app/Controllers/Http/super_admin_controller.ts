@@ -546,7 +546,12 @@ import { validator, schema, rules } from '@adonisjs/validator'
 import User from '#models/user'
 import Role from '#models/role'
 import Database from '@adonisjs/lucid/services/db'
-import { Hash } from '@adonisjs/core/hash'
+import {
+  sendAdminApprovedEmail,
+  sendAdminSuspendedEmail,
+  sendAdminRestoredEmail,
+  sendAdminRejectedEmail,
+} from '../../services/smtp_mail_service.js'
 
 /**
  * Utility function to standardize API responses
@@ -567,6 +572,16 @@ const sendError = (
   status = 500
 ) => {
   return response.status(status).json({ success: false, message, error: error?.message || error })
+}
+
+// Helper to avoid failing the request if email sending fails
+async function safeEmail(fn: () => Promise<void>, email?: string, tag?: string) {
+  try {
+    await fn()
+    if (email) console.log(`Email sent to ${email}${tag ? ` [${tag}]` : ''}`)
+  } catch (err) {
+    console.error('Email send failed', err)
+  }
 }
 
 export default class SuperAdminController {
@@ -630,7 +645,22 @@ export default class SuperAdminController {
       }
 
       await user.save()
+      // Send emails based on action (non-blocking)
+      const basic = { email: user.email, fullName: user.fullName }
 
+      if (payload.action === 'approve' || payload.action === 'activate') {
+        await safeEmail(() => sendAdminApprovedEmail(basic), basic.email, 'approved')
+      }
+      if (payload.action === 'suspend') {
+        await safeEmail(() => sendAdminSuspendedEmail(basic), basic.email, 'suspended')
+      }
+      if (payload.action === 'reject') {
+        await safeEmail(
+          () => sendAdminRejectedEmail(basic, undefined, 'support@crossshieldhc.com'),
+          basic.email,
+          'rejected'
+        )
+      }
       return sendResponse(response, user, `User ${payload.action}d successfully`)
     } catch (error) {
       return sendError(response, 'Failed to manage user status', error, error.status || 500)
@@ -652,7 +682,7 @@ export default class SuperAdminController {
         data: request.only(['action', 'roleId']),
       })
 
-      return await Database.transaction(async (trx) => {
+      const result = await Database.transaction(async (trx) => {
         const user = await User.findOrFail(params.id, { client: trx })
 
         if (payload.action === 'approve') {
@@ -667,10 +697,26 @@ export default class SuperAdminController {
 
         await user.save()
 
-        return sendResponse(response, user, `Registration ${payload.action}d successfully`)
+        return { userId: user.id, action: payload.action }
       })
+
+      const user = await User.findOrFail(result.userId)
+      const basic = { email: user.email, fullName: user.fullName }
+      // const loginUrl = env.get('APP_URL', 'https://yourapp.com') + '/login'
+
+      if (result.action === 'approve') {
+        await safeEmail(() => sendAdminApprovedEmail(basic), basic.email, 'approved')
+      } else {
+        await safeEmail(
+          () => sendAdminRejectedEmail(basic, undefined, 'support@crossshieldhc.com'),
+          basic.email,
+          'rejected'
+        )
+      }
+
+      return sendResponse(response, user, `Registration ${result.action}d successfully`)
     } catch (error) {
-      return sendError(response, 'Error handling registration', error, error.status || 500)
+      return sendError(response, 'Error handling registration', error, (error as any).status || 500)
     }
   }
 
@@ -736,6 +782,9 @@ export default class SuperAdminController {
       user.status = 'suspended'
       await user.save()
 
+      const basic = { email: user.email, fullName: user.fullName }
+
+      await safeEmail(() => sendAdminSuspendedEmail(basic), basic.email, 'suspended')
       return sendResponse(response, user, 'User access revoked successfully')
     } catch (error) {
       return sendError(response, 'Error revoking user access', error)
@@ -755,6 +804,8 @@ export default class SuperAdminController {
 
       user.status = 'active'
       await user.save()
+
+      await safeEmail(() => sendAdminRestoredEmail(user), user.email, 'restored')
 
       return sendResponse(response, user, 'User access restored successfully')
     } catch (error) {
@@ -880,6 +931,13 @@ export default class SuperAdminController {
       supplier.status = payload.action === 'approve' ? 'active' : 'rejected'
       await supplier.save()
 
+      // Send emails based on action (non-blocking)
+      const basic = { email: supplier.email, fullName: supplier.fullName }
+      if (payload.action === 'approve') {
+        await safeEmail(() => sendAdminApprovedEmail(basic), basic.email, 'approved')
+      } else {
+        await safeEmail(() => sendAdminRejectedEmail(basic), basic.email, 'rejected')
+      }
       return sendResponse(response, supplier, `Supplier ${payload.action}d successfully`)
     } catch (error) {
       return sendError(response, 'Error handling supplier', error, error.status || 500)
@@ -964,7 +1022,7 @@ export default class SuperAdminController {
       })
 
       const user = await User.findOrFail(params.id)
-      user.password = await Hash.make(payload.newPassword) // Use configured hasher
+      user.password = payload.newPassword // Use configured hasher
       await user.save()
 
       return sendResponse(response, null, 'Password reset successfully')

@@ -5,10 +5,13 @@ import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 import LandingPage from '../pages/LandingPage';
 import Dashboard from "../pages/Dashboard/Dashboard";
 import NotFound from "../pages/NotFound";
+import MedicationForm from '@/pages/MedicationForm';
 import DiasporaForm from "../pages/DiasporaForm";
 import SupplierForm from "../pages/SupplierForm";
 import HealthcareForm from "../pages/HealthcareForm";
-import MedicationForm from "../pages/MedicationForm";
+import ForgotPassword from "../pages/Auth/ForgotPassword";
+import ResetPassword from "../pages/Auth/ResetPassword";
+import ChangePassword from '@/pages/Auth/ChangePassword';
 // import { LoginForm } from "../components/auth/LoginForm"; 
 import TermsAndCondition from "@/pages/terms";
 import PrivacyPolicy from "@/pages/privacy";
@@ -21,11 +24,15 @@ const AppRoutes = () => {
       {/* <Route path="/login" element={<LoginForm />} /> */}
       
       {/* Registration forms - Public but could be role-specific */}
+      <Route path="/medication-form" element={<MedicationForm />} />
       <Route path="/diaspora-form" element={<DiasporaForm />} />
       <Route path="/supplier-form" element={<SupplierForm />} />
       <Route path="/healthcare-form" element={<HealthcareForm />} />
       <Route path="/terms" element={<TermsAndCondition />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/change-password" element={<ChangePassword />} />
       
       {/* Protected routes */}
       <Route 
@@ -38,14 +45,14 @@ const AppRoutes = () => {
       />
       
       {/* Medication form - Only for specific roles */}
-      <Route 
+      {/* <Route 
         path="/medication-form" 
         element={
             <MedicationForm />
           // <ProtectedRoute requiredRoles={['health_practitioner', 'supplier', 'super_admin']}>
           // </ProtectedRoute>
         } 
-      />
+      /> */}
 
       {/* Admin routes */}
       <Route 

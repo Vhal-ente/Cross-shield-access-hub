@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ManageBeneficiariesForm } from "./components/ManageBeneficiariesForm";
 import { RequestMedicationForm } from "./components/RequestMedicationForm";
-import { BeneficiariesList } from "./components/BeneficiariesList";
+import  BeneficiariesList  from "./components/BeneficiariesList";
 import { Users, Plus, Heart } from "lucide-react";
 
 type ActiveTab = "beneficiaries" | "manage" | "request";

@@ -55,49 +55,6 @@
 //   }
 // }
 
-// // app/middleware/CheckPermission.ts
-// import { HttpContext } from '@adonisjs/core/http'
-// import { NextFn } from '@adonisjs/core/types/http'
-
-// export function CheckPermission(guards: string[]) {
-//   return async function ({ auth, response }: HttpContext, next: NextFn) {
-//     try {
-//       const user = await auth.authenticate()
-//       await user.load('role.permissions')
-
-//       if (!user.role) {
-//         return response.status(403).json({ message: 'No role assigned to user' })
-//       }
-
-//       if (user.status !== 'active') {
-//         return response.status(403).json({ message: 'User account is not active' })
-//       }
-
-//       const userPermissions = user.role.permissions
-//         .filter((permission: { isActive: boolean }) => permission.isActive)
-//         .map((permission: { name: string }) => permission.name)
-
-//       const hasPermission = guards.some((requiredPermission) =>
-//         userPermissions.includes(requiredPermission)
-//       )
-
-//       if (!hasPermission) {
-//         return response.status(403).json({
-//           message: 'Insufficient permissions',
-//           required: guards,
-//           userPermissions,
-//         })
-//       }
-
-//       auth.user!.getPermissions = () => userPermissions
-
-//       await next()
-//     } catch {
-//       return response.status(401).json({ message: 'Authentication required' })
-//     }
-//   }
-// }
-
 // app/middleware/CheckPermission.ts
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'

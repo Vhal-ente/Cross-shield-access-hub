@@ -7,6 +7,7 @@ export const createBeneficiaryValidator = vine.compile(
     email: vine.string().email(),
     location: vine.string(),
     medicationNeeds: vine.string().optional(),
+    status: vine.enum(['active', 'inactive']).optional(),
   })
 )
 

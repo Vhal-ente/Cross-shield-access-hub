@@ -16,7 +16,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   PORT: Env.schema.number(),
   APP_KEY: Env.schema.string(),
   HOST: Env.schema.string({ format: 'host' }),
-  LOG_LEVEL: Env.schema.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']),
+  LOG_LEVEL: Env.schema.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const),
 
   // Database
   DB_CONNECTION: Env.schema.string(),
@@ -25,4 +25,23 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_USER: Env.schema.string(),
   DB_PASSWORD: Env.schema.string.optional(),
   DB_DATABASE: Env.schema.string(),
+
+  ZEPTO_URL: Env.schema.string.optional(),
+  ZEPTO_TOKEN: Env.schema.string.optional(),
+  MAIL_FROM_ADDRESS: Env.schema.string(),
+  MAIL_FROM_NAME: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring the mail package
+  |----------------------------------------------------------
+  */
+  // Email (SMTP)
+  APP_URL: Env.schema.string(),
+  FRONTEND_URL: Env.schema.string.optional(),
+
+  SMTP_HOST: Env.schema.string(),
+  SMTP_PORT: Env.schema.number(),
+  SMTP_USERNAME: Env.schema.string(),
+  SMTP_PASSWORD: Env.schema.string(),
 })

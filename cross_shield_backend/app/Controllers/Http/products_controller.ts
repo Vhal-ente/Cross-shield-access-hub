@@ -1,305 +1,497 @@
+// // app/controllers/http/suppliers_controller.ts
+// import type { HttpContext } from '@adonisjs/core/http'
+// import Supplier from '#models/supplier'
+// import User from '#models/user'
+
+// export default class SuppliersController {
+//   // GET /api/suppliers
+//   public async index({ auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+
+//       if (me.role.name === 'super_admin') {
+//         const rows = await Supplier.query().preload('user').orderBy('created_at', 'desc')
+//         return response.json({ suppliers: rows })
+//       }
+
+//       if (me.role.name === 'supplier') {
+//         const row = await Supplier.query().where('user_id', me.id).preload('user').first()
+//         return response.json({ supplier: row })
+//       }
+
+//       return response.status(403).json({ message: 'Forbidden' })
+//     } catch (error) {
+//       return response
+//         .status(500)
+//         .json({ message: 'Failed to fetch suppliers', error: error.message })
+//     }
+//   }
+
+//   // POST /api/suppliers
+//   public async store({ request, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+
+//       const allowed = me.role.name === 'supplier' || me.role.name === 'super_admin'
+//       if (!allowed) return response.status(403).json({ message: 'Forbidden' })
+
+//       const body = request.only([
+//         'businessName',
+//         'specialization',
+//         'location',
+//         'status',
+//         'userId',
+//         'payload',
+//       ])
+
+//       const targetUserId =
+//         me.role.name === 'super_admin' && body.userId ? Number(body.userId) : me.id
+//       const targetUser = await User.findOrFail(targetUserId)
+
+//       const existing = await Supplier.query().where('user_id', targetUser.id).first()
+//       if (existing) return response.status(409).json({ message: 'Supplier profile already exists' })
+
+//       const supplier = await Supplier.create({
+//         userId: targetUser.id,
+//         businessName: body.businessName ?? null,
+//         specialization: body.specialization ?? null,
+//         location: body.location ?? null,
+//         status: (body.status as 'active' | 'inactive' | 'suspended') ?? 'active',
+//         payload: body.payload ? JSON.stringify(body.payload) : null,
+//       })
+
+//       await supplier.load('user')
+//       return response.status(201).json({ message: 'Supplier created', supplier })
+//     } catch (error) {
+//       return response
+//         .status(400)
+//         .json({ message: 'Failed to create supplier', error: error.message })
+//     }
+//   }
+
+//   // GET /api/suppliers/:id
+//   public async show({ params, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+
+//       const supplier = await Supplier.query().where('id', params.id).preload('user').firstOrFail()
+
+//       if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+//         return response.status(403).json({ message: 'Forbidden' })
+//       }
+
+//       return response.json({ supplier })
+//     } catch {
+//       return response.status(404).json({ message: 'Supplier not found' })
+//     }
+//   }
+
+//   // PUT/PATCH /api/suppliers/:id
+//   public async update({ params, request, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+
+//       const supplier = await Supplier.findOrFail(params.id)
+
+//       if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+//         return response.status(403).json({ message: 'Forbidden' })
+//       }
+
+//       const body = request.only(['businessName', 'specialization', 'location', 'status', 'payload'])
+
+//       if (body.status && me.role.name !== 'super_admin') {
+//         delete body.status
+//       }
+
+//       supplier.merge({
+//         businessName: body.businessName ?? supplier.businessName,
+//         specialization: body.specialization ?? supplier.specialization,
+//         location: body.location ?? supplier.location,
+//         status: (body.status as 'active' | 'inactive' | 'suspended') ?? supplier.status,
+//         payload:
+//           body.payload !== undefined
+//             ? body.payload
+//               ? JSON.stringify(body.payload)
+//               : null
+//             : supplier.payload,
+//       })
+
+//       await supplier.save()
+//       await supplier.load('user')
+
+//       return response.json({ message: 'Supplier updated', supplier })
+//     } catch (error) {
+//       return response
+//         .status(400)
+//         .json({ message: 'Failed to update supplier', error: error.message })
+//     }
+//   }
+
+//   // DELETE /api/suppliers/:id
+//   public async destroy({ params, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+
+//       const supplier = await Supplier.findOrFail(params.id)
+
+//       if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+//         return response.status(403).json({ message: 'Forbidden' })
+//       }
+
+//       await supplier.delete()
+//       return response.json({ message: 'Supplier deleted' })
+//     } catch {
+//       return response.status(404).json({ message: 'Supplier not found' })
+//     }
+//   }
+
+//   // POST /api/suppliers/:id/approve
+//   public async approve({ params, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+//       if (me.role.name !== 'super_admin') return response.status(403).json({ message: 'Forbidden' })
+
+//       const supplier = await Supplier.findOrFail(params.id)
+//       supplier.status = 'active'
+//       await supplier.save()
+//       await supplier.load('user')
+
+//       return response.json({ message: 'Supplier approved', supplier })
+//     } catch {
+//       return response.status(404).json({ message: 'Supplier not found' })
+//     }
+//   }
+
+//   // POST /api/suppliers/:id/reject
+//   public async reject({ params, auth, response }: HttpContext) {
+//     try {
+//       const me = auth.user
+//       if (!me) return response.status(401).json({ message: 'Unauthorized' })
+//       await me.load('role')
+//       if (me.role.name !== 'super_admin') return response.status(403).json({ message: 'Forbidden' })
+
+//       const supplier = await Supplier.findOrFail(params.id)
+//       supplier.status = 'inactive'
+//       await supplier.save()
+//       await supplier.load('user')
+
+//       return response.json({ message: 'Supplier rejected', supplier })
+//     } catch {
+//       return response.status(404).json({ message: 'Supplier not found' })
+//     }
+//   }
+// }
+
 import type { HttpContext } from '@adonisjs/core/http'
-import Product from '#models/product'
+import Supplier from '#models/supplier'
 import User from '#models/user'
-import { createProductValidator, updateProductValidator } from '#validators/product'
-import { DateTime } from 'luxon'
+import Product from '#models/product'
+import { schema } from '@adonisjs/validator'
+import { v4 as uuidv4 } from 'uuid'
 
-export default class ProductsController {
+export default class SuppliersController {
+  // GET /api/suppliers
   public async index({ auth, response }: HttpContext) {
-    try {
-      const user = auth.user!
-      await user.load('role') // Ensure role is loaded
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
 
-      let products
-
-      if (user.role.name === 'super_admin') {
-        products = await Product.query().preload('supplier').orderBy('created_at', 'desc')
-      } else if (user.role.name === 'supplier') {
-        products = await Product.query().where('supplier_id', user.id).orderBy('created_at', 'desc')
-      } else {
-        products = await Product.query()
-          .where('status', 'approved')
-          .preload('supplier')
-          .orderBy('created_at', 'desc')
-      }
-
-      return response.json({ products })
-    } catch (error) {
-      return response.status(500).json({
-        message: 'Failed to fetch products',
-        error: error.message,
-      })
+    if (me.role.name === 'super_admin') {
+      const rows = await Supplier.query().preload('user').orderBy('created_at', 'desc')
+      return response.ok({ suppliers: rows })
     }
+
+    if (me.role.name === 'supplier') {
+      const row = await Supplier.query().where('user_id', me.id).preload('user').first()
+      return response.ok({ supplier: row })
+    }
+
+    return response.forbidden({ message: 'Forbidden' })
   }
 
-  // public async store({ request, response, auth }: HttpContext) {
-  //   try {
-  //     const payload = await request.validateUsing(createProductValidator)
-  //     const user = auth.user
+  // POST /api/suppliers
+  public async store({ request, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
 
-  //     if (!user || user.role.name !== 'supplier') {
-  //       return response.status(403).json({
-  //         message: 'Only suppliers can create products',
-  //       })
-  //     }
+    const allowed = me.role.name === 'supplier' || me.role.name === 'super_admin'
+    if (!allowed) return response.forbidden({ message: 'Forbidden' })
 
-  //     const product = await Product.create({
-  //       ...payload,
-  //       supplierId: user.id,
-  //       status: 'pending',
-  //       businessName: user.businessName || undefined,
-  //     })
+    const body = request.only([
+      'businessName',
+      'specialization',
+      'location',
+      'status',
+      'userId',
+      'payload',
+    ])
 
-  //     await product.load('supplier')
+    const targetUserId = me.role.name === 'super_admin' && body.userId ? Number(body.userId) : me.id
+    const targetUser = await User.findOrFail(targetUserId)
 
-  //     return response.status(201).json({
-  //       message: 'Product created successfully',
-  //       product,
-  //     })
-  //   } catch (error) {
-  //     return response.status(400).json({
-  //       message: 'Failed to create product',
-  //       errors: error.messages || error.message,
-  //     })
-  //   }
-  // }
+    const existing = await Supplier.query().where('user_id', targetUser.id).first()
+    if (existing) return response.conflict({ message: 'Supplier profile already exists' })
 
-  public async store({ request, response, auth }: HttpContext) {
-    try {
-      const user = auth.user
+    const supplier = await Supplier.create({
+      userId: targetUser.id,
+      businessName: body.businessName ?? null,
+      specialization: body.specialization ?? null,
+      location: body.location ?? null,
+      status: (body.status as 'active' | 'inactive' | 'suspended') ?? 'active',
+      payload: body.payload ? JSON.stringify(body.payload) : null,
+    })
 
-      if (!user) {
-        return response.status(401).json({
-          message: 'User not authenticated',
-        })
-      }
-
-      // Load role if not already loaded
-      const allowedRoles = ['supplier' || 'super_admin']
-      if (!allowedRoles) {
-        await user.load('role')
-      }
-
-      console.log('User role after load:', user.role)
-
-      if (!allowedRoles.includes(user.role.name)) {
-        return response.status(403).json({
-          message: 'Only suppliers can create products',
-          userRole: user.role?.name || 'no role',
-        })
-      }
-
-      // Check content type and handle accordingly
-      const contentType = request.header('content-type') || ''
-      let payload
-
-      if (contentType.includes('multipart/form-data')) {
-        // Handle FormData
-        console.log('Processing FormData...')
-
-        // Get all form fields
-        const formData = request.all()
-        console.log('FormData fields:', formData)
-
-        // Manual validation for FormData (since validator might not work with FormData)
-        const requiredFields = ['name', 'phone', 'email', 'location', 'businessName']
-        const missingFields = requiredFields.filter((field) => !formData[field])
-
-        if (missingFields.length > 0) {
-          return response.status(400).json({
-            message: 'Validation failed',
-            errors: {
-              message: `Missing required fields: ${missingFields.join(', ')}`,
-              fields: missingFields,
-            },
-          })
-        }
-
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(formData.email)) {
-          return response.status(400).json({
-            message: 'Validation failed',
-            errors: {
-              email: ['Please enter a valid email address'],
-            },
-          })
-        }
-
-        // Validate phone format
-        const phoneRegex = /^\+?\d{10,15}$/
-        if (!phoneRegex.test(formData.phone)) {
-          return response.status(400).json({
-            message: 'Validation failed',
-            errors: {
-              phone: ['Please enter a valid phone number'],
-            },
-          })
-        }
-
-        payload = formData
-      } else if (contentType.includes('application/json')) {
-        // Handle JSON - use existing validator
-        console.log('Processing JSON...')
-        payload = await request.validateUsing(createProductValidator)
-      } else {
-        return response.status(400).json({
-          message: 'Unsupported content type. Use either application/json or multipart/form-data',
-        })
-      }
-
-      console.log('Final payload:', payload)
-
-      // Create product with validated payload
-      const product = await Product.create({
-        name: payload.name,
-        phone: payload.phone,
-        email: payload.email,
-        location: payload.location,
-        businessName: payload.businessName,
-        supplierId: user.id,
-        status: 'pending',
-        // Add any other fields from your Product model
-      })
-
-      await product.load('supplier')
-
-      return response.status(201).json({
-        message: 'Product created successfully',
-        product,
-      })
-    } catch (error) {
-      console.error('Product creation error:', error)
-      return response.status(400).json({
-        message: 'Failed to create product',
-        errors: error.messages || error.message,
-      })
-    }
+    await supplier.load('user')
+    return response.created({ message: 'Supplier created', supplier })
   }
 
-  public async show({ params, response }: HttpContext) {
-    try {
-      const product = await Product.query().where('id', params.id).preload('supplier').firstOrFail()
+  // GET /api/suppliers/:id
+  public async show({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
 
-      return response.json({
-        product,
-      })
-    } catch (error) {
-      return response.status(404).json({
-        message: 'Product not found',
-      })
+    const supplier = await Supplier.query().where('id', params.id).preload('user').firstOrFail()
+
+    if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
     }
+
+    return response.ok({ supplier })
   }
 
-  public async update({ params, request, response }: HttpContext) {
-    try {
-      const payload = await request.validateUsing(updateProductValidator)
-      const user = (response as any).locals.user as User
+  // PUT /api/suppliers/:id
+  public async update({ params, request, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
 
-      const product = await Product.findOrFail(params.id)
+    const supplier = await Supplier.findOrFail(params.id)
 
-      // Check authorization
-      if (user.role.name !== 'super_admin' && product.supplierId !== user.id) {
-        return response.status(403).json({
-          message: 'Unauthorized to update this product',
-        })
-      }
-
-      product.merge({
-        ...payload,
-        // expiryDate: payload.expiryDate ? DateTime.fromJSDate(payload.expiryDate) : undefined, // Convert to DateTime or set to undefined
-      })
-      await product.save()
-
-      await product.load('supplier')
-
-      return response.json({
-        message: 'Product updated successfully',
-        product,
-      })
-    } catch (error) {
-      return response.status(400).json({
-        message: 'Failed to update product',
-        errors: error.messages || error.message,
-      })
+    if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
     }
+
+    const body = request.only(['businessName', 'specialization', 'location', 'status', 'payload'])
+
+    if (body.status && me.role.name !== 'super_admin') {
+      delete body.status
+    }
+
+    supplier.merge({
+      businessName: body.businessName ?? supplier.businessName,
+      specialization: body.specialization ?? supplier.specialization,
+      location: body.location ?? supplier.location,
+      status: (body.status as 'active' | 'inactive' | 'suspended') ?? supplier.status,
+      payload:
+        body.payload !== undefined
+          ? body.payload
+            ? JSON.stringify(body.payload)
+            : null
+          : supplier.payload,
+    })
+
+    await supplier.save()
+    await supplier.load('user')
+
+    return response.ok({ message: 'Supplier updated', supplier })
   }
 
-  public async destroy({ params, response }: HttpContext) {
-    try {
-      const user = (response as any).locals.user as User
-      const product = await Product.findOrFail(params.id)
+  // DELETE /api/suppliers/:id
+  public async destroy({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
 
-      // Check authorization
-      if (user.role.name !== 'super_admin' && product.supplierId !== user.id) {
-        return response.status(403).json({
-          message: 'Unauthorized to delete this product',
-        })
-      }
+    const supplier = await Supplier.findOrFail(params.id)
 
-      await product.delete()
-
-      return response.json({
-        message: 'Product deleted successfully',
-      })
-    } catch (error) {
-      return response.status(404).json({
-        message: 'Product not found',
-      })
+    if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
     }
+
+    await supplier.delete()
+    return response.ok({ message: 'Supplier deleted' })
   }
 
-  public async approve({ params, response }: HttpContext) {
-    try {
-      const user = (response as any).locals.user as User
+  // POST /api/suppliers/:id/approve
+  public async approve({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
+    if (me.role.name !== 'super_admin') return response.forbidden({ message: 'Forbidden' })
 
-      if (user.role.name !== 'super_admin') {
-        return response.status(403).json({
-          message: 'Only super admin can approve products',
-        })
-      }
+    const supplier = await Supplier.findOrFail(params.id)
+    supplier.status = 'active'
+    await supplier.save()
+    await supplier.load('user')
 
-      const product = await Product.findOrFail(params.id)
-      product.status = 'approved'
-      await product.save()
-
-      await product.load('supplier')
-
-      return response.json({
-        message: 'Product approved successfully',
-        product,
-      })
-    } catch (error) {
-      return response.status(404).json({
-        message: 'Product not found',
-      })
-    }
+    return response.ok({ message: 'Supplier approved', supplier })
   }
 
-  public async reject({ params, response }: HttpContext) {
-    try {
-      const user = (response as any).locals.user as User
+  // POST /api/suppliers/:id/reject
+  public async reject({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
+    if (me.role.name !== 'super_admin') return response.forbidden({ message: 'Forbidden' })
 
-      if (user.role.name !== 'super_admin') {
-        return response.status(403).json({
-          message: 'Only super admin can reject products',
-        })
-      }
+    const supplier = await Supplier.findOrFail(params.id)
+    supplier.status = 'inactive'
+    await supplier.save()
+    await supplier.load('user')
 
-      const product = await Product.findOrFail(params.id)
-      product.status = 'rejected'
-      await product.save()
+    return response.ok({ message: 'Supplier rejected', supplier })
+  }
 
-      await product.load('supplier')
+  // ---------------------------------------------------------------------------
+  // Product endpoints (use supplierId)
+  // ---------------------------------------------------------------------------
 
-      return response.json({
-        message: 'Product rejected successfully',
-        product,
-      })
-    } catch (error) {
-      return response.status(404).json({
-        message: 'Product not found',
-      })
+  // GET /api/suppliers/:supplierId/products
+  public async productsIndex({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+
+    const supplierId = Number(params.supplierId)
+    if (Number.isNaN(supplierId)) return response.badRequest({ message: 'Invalid supplier id' })
+
+    const products = await Product.query()
+      .where('supplier_id', supplierId)
+      .orderBy('created_at', 'desc')
+
+    return response.ok({ products })
+  }
+
+  // POST /api/suppliers/:supplierId/products
+  public async productsStore({ params, request, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
+
+    const supplierId = Number(params.supplierId)
+    if (Number.isNaN(supplierId)) return response.badRequest({ message: 'Invalid supplier id' })
+
+    const supplier = await Supplier.find(supplierId)
+    if (!supplier) return response.notFound({ message: 'Supplier not found' })
+
+    if (me.role.name !== 'super_admin' && supplier.userId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
     }
+
+    const productSchema = schema.create({
+      name: schema.string({ trim: true }),
+      details: schema.string.optional({ trim: true }),
+      expiration_date: schema.date.optional(),
+      price: schema.number.optional(),
+    })
+
+    await request.validate({ schema: productSchema })
+
+    const image = request.file('image', {
+      size: '5mb',
+      extnames: ['jpg', 'jpeg', 'png', 'webp'],
+    })
+
+    let savedFileName: string | null = null
+    if (image) {
+      if (!image.isValid)
+        return response.badRequest({ message: 'Invalid image', errors: image.errors })
+      const filename = `${Date.now()}-${uuidv4()}.${image.extname}`
+      await image.move('uploads/products', { name: filename, overwrite: false })
+      savedFileName = image.fileName || filename
+    }
+
+    const created = await Product.create({
+      supplierId: supplier.id,
+      name: request.input('name'),
+      details: request.input('details') ?? null,
+      expirationDate: request.input('expiration_date') ?? null,
+      price: request.input('price') ?? null,
+      image: savedFileName,
+      status: 'pending',
+    })
+
+    await created.load('supplier')
+    return response.created({ message: 'Product created', product: created })
+  }
+
+  // GET /api/products/:id
+  public async productShow({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+
+    const product = await Product.query().where('id', params.id).preload('supplier').firstOrFail()
+
+    return response.ok({ product })
+  }
+
+  // PUT /api/products/:id
+  public async productUpdate({ params, request, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
+
+    const product = await Product.findOrFail(params.id)
+    if (me.role.name !== 'super_admin' && product.supplierId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
+    }
+
+    const body = request.only(['name', 'details', 'expiration_date', 'price', 'status'])
+    if (body.expiration_date) body.expiration_date = new Date(body.expiration_date)
+
+    const image = request.file('image', {
+      size: '5mb',
+      extnames: ['jpg', 'jpeg', 'png', 'webp'],
+    })
+
+    let savedFileName: string | null = null
+    if (image) {
+      if (!image.isValid)
+        return response.badRequest({ message: 'Invalid image', errors: image.errors })
+      const filename = `${Date.now()}-${uuidv4()}.${image.extname}`
+      await image.move('uploads/products', { name: filename, overwrite: false })
+      savedFileName = image.fileName || filename
+    }
+
+    product.merge({
+      name: body.name ?? product.name,
+      details: body.details ?? product.details,
+      expirationDate: body.expiration_date ?? product.expirationDate,
+      price: body.price ?? product.price,
+      image: savedFileName ?? product.image,
+      status: body.status ?? product.status,
+    })
+
+    await product.save()
+    await product.load('supplier')
+    return response.ok({ message: 'Product updated', product })
+  }
+
+  // DELETE /api/products/:id
+  public async productDestroy({ params, auth, response }: HttpContext) {
+    const me = auth.user
+    if (!me) return response.unauthorized({ message: 'Unauthorized' })
+    await me.load('role')
+
+    const product = await Product.findOrFail(params.id)
+    if (me.role.name !== 'super_admin' && product.supplierId !== me.id) {
+      return response.forbidden({ message: 'Forbidden' })
+    }
+
+    await product.delete()
+    return response.ok({ message: 'Product deleted' })
   }
 }

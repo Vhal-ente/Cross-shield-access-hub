@@ -1,29 +1,44 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Beneficiary from '#models/beneficiary'
-import User from '#models/user'
+// import User from '#models/user'
 import { createBeneficiaryValidator, updateBeneficiaryValidator } from '#validators/beneficiary'
+import { DateTime } from 'luxon'
 
 export default class BeneficiariesController {
-  public async index({ response }: HttpContext) {
+  public async index({ request, response, auth }: HttpContext) {
     try {
-      const user = (response as any).locals.user as User
-      let beneficiaries
+      const user = auth.user!
+      await user.load('role')
+
+      const page = request.input('page', 1)
+      const limit = request.input('limit', 10)
 
       if (user.role.name === 'super_admin') {
-        beneficiaries = await Beneficiary.query().preload('diaspora').orderBy('created_at', 'desc')
-      } else if (user.role.name === 'diaspora') {
-        beneficiaries = await Beneficiary.query()
-          .where('diaspora_id', user.id)
+        const beneficiaries = await Beneficiary.query()
+          .preload('diaspora')
           .orderBy('created_at', 'desc')
-      } else {
-        return response.status(403).json({
-          message: 'Unauthorized to view beneficiaries',
+          .paginate(page, limit)
+
+        return response.json({
+          data: beneficiaries.all(),
+          meta: beneficiaries.getMeta(),
         })
       }
 
-      return response.json({
-        beneficiaries,
-      })
+      if (user.role.name === 'diaspora') {
+        const beneficiaries = await Beneficiary.query()
+          .where('diaspora_id', user.id)
+          .preload('diaspora')
+          .orderBy('created_at', 'desc')
+          .paginate(page, limit)
+
+        return response.json({
+          data: beneficiaries.all(),
+          meta: beneficiaries.getMeta(),
+        })
+      }
+
+      return response.status(403).json({ message: 'Unauthorized to view beneficiaries' })
     } catch (error) {
       return response.status(500).json({
         message: 'Failed to fetch beneficiaries',
@@ -33,22 +48,24 @@ export default class BeneficiariesController {
   }
 
   public async store({ request, response, auth }: HttpContext) {
+    const user = auth.user!
+    await user.load('role')
+
+    if (user.role.name !== 'diaspora') {
+      return response.status(403).json({
+        message: 'Only diaspora users can create beneficiaries',
+      })
+    }
+
     try {
       const payload = await request.validateUsing(createBeneficiaryValidator)
-      const user = auth.user!
-
-      await user.load('role')
-
-      if (user.role.name !== 'diaspora') {
-        return response.status(403).json({
-          message: 'Only diaspora users can create beneficiaries',
-        })
-      }
-
       const beneficiary = await Beneficiary.create({
         ...payload,
         diasporaId: user.id,
         status: 'active',
+        referred: false,
+        referralNote: null,
+        referredAt: null,
       })
 
       await beneficiary.load('diaspora')
@@ -65,9 +82,10 @@ export default class BeneficiariesController {
     }
   }
 
-  public async show({ params, response }: HttpContext) {
+  public async show({ params, response, auth }: HttpContext) {
+    const user = auth.user!
+    await user.load('role')
     try {
-      const user = (response as any).locals.user as User
       const beneficiary = await Beneficiary.query()
         .where('id', params.id)
         .preload('diaspora')
@@ -90,11 +108,12 @@ export default class BeneficiariesController {
     }
   }
 
-  public async update({ params, request, response }: HttpContext) {
+  public async update({ params, request, response, auth }: HttpContext) {
+    const user = auth.user!
+    await user.load('role')
+
     try {
       const payload = await request.validateUsing(updateBeneficiaryValidator)
-      const user = (response as any).locals.user as User
-
       const beneficiary = await Beneficiary.findOrFail(params.id)
 
       // Check authorization
@@ -106,7 +125,6 @@ export default class BeneficiariesController {
 
       beneficiary.merge(payload)
       await beneficiary.save()
-
       await beneficiary.load('diaspora')
 
       return response.json({
@@ -121,11 +139,11 @@ export default class BeneficiariesController {
     }
   }
 
-  public async destroy({ params, response }: HttpContext) {
+  public async destroy({ params, response, auth }: HttpContext) {
+    const user = auth.user!
+    await user.load('role')
     try {
-      const user = (response as any).locals.user as User
       const beneficiary = await Beneficiary.findOrFail(params.id)
-
       // Check authorization
       if (user.role.name !== 'super_admin' && beneficiary.diasporaId !== user.id) {
         return response.status(403).json({
@@ -142,6 +160,36 @@ export default class BeneficiariesController {
       return response.status(404).json({
         message: 'Beneficiary not found',
       })
+    }
+  }
+
+  // referral endpoint
+  public async refer({ params, request, response, auth }: HttpContext) {
+    const user = auth.user!
+    await user.load('role')
+
+    if (user.role.name !== 'diaspora') {
+      return response.status(403).json({ message: 'Only diaspora users refer patients' })
+    }
+
+    try {
+      const beneficiary = await Beneficiary.findOrFail(params.id)
+      if (beneficiary.diasporaId !== user.id) {
+        return response.status(403).json({ message: 'Unauthorized to refer this beneficiary' })
+      }
+
+      const referralNote = request.input('referral_note') || null
+      beneficiary.merge({
+        referred: true,
+        referralNote,
+        referredAt: DateTime.local(),
+      })
+      await beneficiary.save()
+      return response.json({ message: 'Beneficiary referred successfully', beneficiary })
+    } catch (error) {
+      return response
+        .status(400)
+        .json({ message: 'Failed to refer beneficiary', errors: error.messages || error.message })
     }
   }
 }

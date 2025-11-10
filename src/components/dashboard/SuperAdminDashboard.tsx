@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AllRequestsManagement } from "./components/AllRequestsManagement";
-import { UsersRolesManagement } from "./components/UsersRolesManagement";
-import { AdvertsApproval } from "./components/AdvertsApproval";
+import  UsersRolesManagement  from "./components/UsersRolesManagement";
 import SupplierRequestsManagement from "./components/SupplierRequestsManagement";
-import { Shield, Users, CheckCircle, Package } from "lucide-react";
+import  DiasporaDirectory from "./components/DiasporaManagement";
+import HealthPractitionerManagement from "./components/HealthPractitionerManagement";
+import { Shield, Users, CheckCircle, Package, UserRoundPlus, Hospital } from "lucide-react";
 
-type ActiveTab = "users" | "requests" | "diaspora" | "supplier_requests" | "health";
+type ActiveTab = "users" | "requests" | "diaspora" | "supplier_requests" | "health" | "patient";
 
 export const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>("users");
@@ -17,7 +18,8 @@ export const SuperAdminDashboard = () => {
     { id: "requests" as ActiveTab, label: "Medication Requests", icon: Package },
     { id: "diaspora" as ActiveTab, label: "Diaspora Management", icon: CheckCircle },
     { id: "supplier_requests" as ActiveTab, label: "Suppliers Management", icon: Shield },
-    { id: "health" as ActiveTab, label: "Health Practitioner", icon: CheckCircle }
+    { id: "patient" as ActiveTab, label: "Patient", icon: UserRoundPlus },
+    { id: "health" as ActiveTab, label: "Health Practitioner", icon: Hospital },
   ];
 
   const renderContent = () => {
@@ -27,20 +29,23 @@ export const SuperAdminDashboard = () => {
       case "requests":
         return <AllRequestsManagement />;
       case "diaspora":
-        return (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-            <CheckCircle className="h-14 w-14 text-purple-400 mb-3" />
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Diaspora Management</h3>
-            <p className="text-sm text-gray-600">This feature is coming soon. Stay tuned for updates.</p>
-          </div>
-        );
+        return <DiasporaDirectory/>
+        // return (
+        //   <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+        //     <CheckCircle className="h-14 w-14 text-purple-400 mb-3" />
+        //     <h3 className="text-base font-semibold text-gray-900 mb-1">Diaspora Management</h3>
+        //     <p className="text-sm text-gray-600">This feature is coming soon. Stay tuned for updates.</p>
+        //   </div>
+        // );
       case "supplier_requests":
         return <SupplierRequestsManagement />;
       case "health":
+        return <HealthPractitionerManagement />;
+      case "patient":
         return (
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-            <CheckCircle className="h-14 w-14 text-teal-400 mb-3" />
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Health Practitioner Management</h3>
+            <CheckCircle className="h-14 w-14 text-blue-400 mb-3" />
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Patient Management</h3>
             <p className="text-sm text-gray-600">This feature is coming soon. Stay tuned for updates.</p>
           </div>
         );

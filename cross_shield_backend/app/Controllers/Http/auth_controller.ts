@@ -1,42 +1,163 @@
 import { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import Role from '#models/role' // Import Role model
+import HealthPractitioner from '#models/health_practitioner'
 import { createUserValidator, loginValidator } from '#validators/auth'
 import { Exception } from '@adonisjs/core/exceptions'
-
+import { userRegistered } from '../../Mail/email.js'
+import mail from '@adonisjs/mail/services/main'
 export default class AuthController {
+  // public async register({ request, response }: HttpContext) {
+  //   try {
+  //     const payload = await request.validateUsing(createUserValidator)
+
+  //     const role = await Role.findByOrFail('name', payload.role)
+
+  //     const user = await User.create({
+  //       ...payload,
+  //       roleId: role.id,
+  //       status: 'pending',
+  //     })
+
+  //     // Load user with role and permissions
+  //     await user.load('role', (roleQuery) => {
+  //       roleQuery.preload('permissions')
+  //     })
+  //     // Create token
+  //     const token = await User.accessTokens.create(user)
+
+  //     // build email
+  //     const { subject, html, text } = userRegistered({
+  //       userName: user.fullName || 'there',
+  //       appName: 'Cross Shield',
+  //       // verifyUrl: `https://yourapp.com/verify?token=${user.verificationToken}`,
+  //       supportEmail: 'support@crossshieldhc.com',
+  //     })
+
+  //     try {
+  //       await mail.send((m) => {
+  //         m.to(user.email)
+  //         m.subject(subject)
+  //         m.html(html)
+  //         m.text(text)
+  //       })
+  //     } catch (e) {
+  //       console.error('welcome email failed', e)
+  //     }
+  //     return response.status(201).json({
+  //       message: 'Registration successful',
+  //       user: user.toJSON(), // Return directly
+  //       token: token.value!.release(),
+  //     })
+  //   } catch (error) {
+  //     if (error instanceof Exception && 'messages' in error) {
+  //       return response.status(422).json({
+  //         message: 'Validation failed',
+  //         errors: error.messages,
+  //       })
+  //     }
+
+  //     console.error('Registration error:', error)
+  //     return response.status(500).json({
+  //       message: 'Registration failed',
+  //       error: error instanceof Error ? error.message : 'Unknown error',
+  //     })
+  //   }
+  // }
+
   public async register({ request, response }: HttpContext) {
+    const trx = await db.transaction()
     try {
       const payload = await request.validateUsing(createUserValidator)
 
-      const role = await Role.findByOrFail('name', payload.role)
+      const {
+        role: roleName,
+        specialization,
+        licenseNumber,
+        location,
+        ...userPayload
+      } = payload as any
 
-      const user = await User.create({
-        ...payload,
-        roleId: role.id,
-        status: 'pending',
-      })
+      const role = await Role.query({ client: trx }).where('name', roleName).firstOrFail()
 
-      // Load user with role and permissions
-      await user.load('role', (roleQuery) => {
-        roleQuery.preload('permissions')
-      })
-      // Create token
+      const user = await User.create(
+        {
+          ...userPayload,
+          location: location ?? null,
+          roleId: role.id,
+          status: 'pending',
+        },
+        { client: trx }
+      )
+
+      if (role.name === 'health_practitioner') {
+        await HealthPractitioner.updateOrCreate(
+          { userId: user.id },
+          {
+            specialization: specialization ?? request.input('specialization') ?? null,
+            licenseNumber: licenseNumber ?? request.input('licenseNumber') ?? null,
+            location: user.location ?? request.input('location') ?? null,
+            status: 'pending',
+          },
+          { client: trx }
+        )
+      }
+
+      await trx.commit()
+
+      await user.load('role', (r) => r.preload('permissions'))
+      await user.load('healthPractitioner')
+
       const token = await User.accessTokens.create(user)
+
+      const { subject, html, text } = userRegistered({
+        userName: user.fullName || 'there',
+        appName: 'Cross Shield',
+        supportEmail: 'support@crossshieldhc.com',
+      })
+
+      try {
+        await mail.send((m) => {
+          m.to(user.email)
+          m.subject(subject)
+          m.html(html)
+          m.text(text)
+        })
+      } catch (e) {
+        console.error('welcome email failed', e)
+      }
 
       return response.status(201).json({
         message: 'Registration successful',
-        user: user.toJSON(), // Return directly
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role?.name,
+          status: user.status,
+          healthPractitioner: user.healthPractitioner
+            ? {
+                id: user.healthPractitioner.id,
+                specialization: user.healthPractitioner.specialization,
+                licenseNumber: user.healthPractitioner.licenseNumber,
+                location: user.healthPractitioner.location,
+                status: user.healthPractitioner.status,
+              }
+            : null,
+        },
         token: token.value!.release(),
       })
     } catch (error) {
-      if (error instanceof Exception && 'messages' in error) {
+      try {
+        await trx.rollback()
+      } catch {}
+      if (error && 'messages' in error) {
         return response.status(422).json({
           message: 'Validation failed',
-          errors: error.messages,
+          errors: (error as any).messages,
         })
       }
-
       console.error('Registration error:', error)
       return response.status(500).json({
         message: 'Registration failed',
@@ -189,6 +310,55 @@ export default class AuthController {
       })
     } catch (error) {
       console.error('Me endpoint error:', error)
+      return response.status(500).json({
+        message: 'Internal server error',
+        error: error.message,
+      })
+    }
+  }
+  public async forgotPassword({ request, response }: HttpContext) {
+    try {
+      const email = request.input('email')
+      // Logic to handle password reset (e.g., send reset email)
+      return response.json({ message: `Password reset link sent to ${email}` })
+    } catch (error) {
+      console.error('Forgot Password error:', error)
+      return response.status(500).json({
+        message: 'Internal server error',
+        error: error.message,
+      })
+    }
+  }
+  public async resetPassword({ request, response }: HttpContext) {
+    try {
+      request.only(['token', 'newPassword'])
+      // Logic to handle password reset using the token
+      return response.json({ message: 'Password has been reset successfully' })
+    } catch (error) {
+      console.error('Reset Password error:', error)
+      return response.status(500).json({
+        message: 'Internal server error',
+        error: error.message,
+      })
+    }
+  }
+  public async changePassword({ auth, request, response }: HttpContext) {
+    try {
+      const user = auth.user!
+      const { currentPassword, newPassword } = request.only(['currentPassword', 'newPassword'])
+
+      // Verify current password
+      if (!(await User.verifyCredentials(user.email, currentPassword))) {
+        return response.status(401).json({ message: 'Current password is incorrect' })
+      }
+
+      // Update to new password
+      user.password = newPassword
+      await user.save()
+
+      return response.json({ message: 'Password changed successfully' })
+    } catch (error) {
+      console.error('Change Password error:', error)
       return response.status(500).json({
         message: 'Internal server error',
         error: error.message,

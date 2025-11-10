@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/api"
 
 export const ReferPatientForm = () => {
   const [patientData, setPatientData] = useState({
@@ -22,20 +23,64 @@ export const ReferPatientForm = () => {
     notes: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+  
     if (!patientData.name || !patientData.phone || !medicationData.name) {
-      toast.error("Please fill in required fields");
-      return;
+      toast.error('Please fill in required fields')
+      return
     }
-
-    toast.success("Patient referred successfully! You'll receive 30% of the profit.");
-    
-    // Reset form
-    setPatientData({ name: "", phone: "", email: "", address: "" });
-    setMedicationData({ name: "", dosage: "", frequency: "", duration: "", notes: "" });
-  };
+  
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      toast.error('Not authenticated, please login')
+      return
+    }
+  
+    try {
+      const res = await fetch(`${API_BASE_URL}/referrals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          referredName: patientData.name,
+          referredPhone: patientData.phone,
+          referredEmail: patientData.email || null,
+          referredAddress: patientData.address || null,
+          referralType: 'beneficiary',
+          metadata: { medication: medicationData }
+        })
+      })
+  
+      const text = await res.text()
+      let data: any
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        data = { message: text }
+      }
+  
+      if (res.status === 401 || res.status === 403) {
+        toast.error('Authentication required')
+        return
+      }
+  
+      if (!res.ok) {
+        toast.error(data.message || `Failed with status ${res.status}`)
+        return
+      }
+  
+      toast.success("Patient referred successfully. You'll receive 30% of the profit.")
+      setPatientData({ name: '', phone: '', email: '', address: '' })
+      setMedicationData({ name: '', dosage: '', frequency: '', duration: '', notes: '' })
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Network error')
+    }
+  }
+  
 
   return (
     <Card>

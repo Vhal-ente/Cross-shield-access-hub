@@ -1,4 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
+import { DateTime } from 'luxon'
 import MedicationRequest from '#models/medication_request'
 import User from '#models/user'
 import {
@@ -16,33 +18,31 @@ export default class MedicationRequestsController {
         .where('id', authenticatedUser.id)
         .preload('role')
         .firstOrFail()
-      let requests
+
+      let requests: MedicationRequest[] = []
 
       if (user.role.name === 'super_admin') {
         requests = await MedicationRequest.query()
-          .preload('user', (userQuery) => {
-            userQuery.preload('role')
-          })
-          .preload('assignedUser', (assignedUserQuery) => {
-            assignedUserQuery.preload('role')
-          })
+          .preload('user', (q) => q.preload('role'))
+          .preload('assignedUser', (q) => q.preload('role'))
           .preload('beneficiary')
           .orderBy('created_at', 'desc')
       } else if (user.role.name === 'health_practitioner') {
         requests = await MedicationRequest.query()
           .where('assigned_to', user.id)
           .orWhere('status', 'pending')
-          .preload('user', (userQuery) => {
-            userQuery.preload('role')
-          })
+          .preload('user', (q) => q.preload('role'))
           .preload('beneficiary')
           .orderBy('created_at', 'desc')
       } else {
+        // Regular users and beneficiaries: include requests created by the user
+        // or requests where the user is the beneficiary
         requests = await MedicationRequest.query()
-          .where('user_id', user.id)
-          .preload('assignedUser', (assignedUserQuery) => {
-            assignedUserQuery.preload('role')
+          .where((query) => {
+            query.where('user_id', user.id).orWhere('beneficiary_id', user.id)
           })
+          .preload('user', (q) => q.preload('role'))
+          .preload('assignedUser', (q) => q.preload('role'))
           .preload('beneficiary')
           .orderBy('created_at', 'desc')
       }
@@ -53,25 +53,20 @@ export default class MedicationRequestsController {
         type: 'Medication Request',
         requestedBy: {
           fullName: request.user?.fullName || 'Unknown User',
-          role: {
-            name: request.user?.role?.name || 'unknown_role',
-          },
+          role: { name: request.user?.role?.name || 'unknown_role' },
         },
         // 🔥 FORMAT MEDICATION AS READABLE STRING:
         medication: (() => {
           try {
-            const medications =
-              typeof request.medications === 'string'
+            const meds = Array.isArray(request.medications)
+              ? request.medications
+              : typeof request.medications === 'string'
                 ? JSON.parse(request.medications)
-                : request.medications
+                : []
 
-            if (!medications || !Array.isArray(medications)) {
-              return 'No medications specified'
-            }
-
-            return medications.map((med) => `${med.name} (${med.quantity})`).join(', ')
-          } catch (error) {
-            console.error('Error parsing medication:', error)
+            if (!Array.isArray(meds) || meds.length === 0) return 'No medications specified'
+            return meds.map((m) => `${m.name} (${m.quantity})`).join(', ')
+          } catch {
             return 'Invalid medication data'
           }
         })(),
@@ -196,15 +191,18 @@ export default class MedicationRequestsController {
         }
       }
 
-      // ✅ Create the medication request
+      // after processing uploadedImageNames array
+      const prescriptionImagesValue =
+        uploadedImageNames.length > 0 ? JSON.stringify(uploadedImageNames) : null
+
       const medicationRequest = await MedicationRequest.create({
         ...payload,
         userId: user.id,
         status: 'pending',
-        medications: medications, // Make sure this is the parsed array
+        medications: medications,
         beneficiaryId: payload.beneficiaryId || null,
         notes: payload.notes ?? null,
-        prescriptionImages: uploadedImageNames,
+        prescriptionImages: prescriptionImagesValue,
       })
 
       console.log('Created medication request with ID:', medicationRequest.id)
@@ -248,45 +246,100 @@ export default class MedicationRequestsController {
     }
   }
 
+  // public async show({ params, response, auth }: HttpContext) {
+  //   try {
+  //     const authenticatedUser = await auth.authenticate()
+
+  //     // ✅ FIXED: Load user with role
+  //     const user = await User.query()
+  //       .where('id', authenticatedUser.id)
+  //       .preload('role')
+  //       .firstOrFail()
+
+  //     const request = await MedicationRequest.query()
+  //       .where('id', params.id)
+  //       .preload('user', (userQuery) => {
+  //         userQuery.preload('role')
+  //       })
+  //       .preload('assignedUser')
+  //       .preload('beneficiary')
+  //       .firstOrFail()
+
+  //     // Check authorization
+  //     if (
+  //       user.role.name !== 'super_admin' &&
+  //       request.userId !== user.id &&
+  //       request.assignedTo !== user.id
+  //     ) {
+  //       return response.status(403).json({
+  //         message: 'Unauthorized to view this request',
+  //       })
+  //     }
+
+  //     return response.json({
+  //       request,
+  //     })
+  //   } catch (error) {
+  //     console.error('Error fetching medication request:', error)
+  //     return response.status(404).json({
+  //       message: 'Request not found',
+  //     })
+  //   }
+  // }
   public async show({ params, response, auth }: HttpContext) {
+    // authenticate
+    let authUser
     try {
-      const authenticatedUser = await auth.authenticate()
-
-      // ✅ FIXED: Load user with role
-      const user = await User.query()
-        .where('id', authenticatedUser.id)
-        .preload('role')
-        .firstOrFail()
-
-      const request = await MedicationRequest.query()
-        .where('id', params.id)
-        .preload('user', (userQuery) => {
-          userQuery.preload('role')
-        })
-        .preload('assignedUser')
-        .preload('beneficiary')
-        .firstOrFail()
-
-      // Check authorization
-      if (
-        user.role.name !== 'super_admin' &&
-        request.userId !== user.id &&
-        request.assignedTo !== user.id
-      ) {
-        return response.status(403).json({
-          message: 'Unauthorized to view this request',
-        })
-      }
-
-      return response.json({
-        request,
-      })
-    } catch (error) {
-      console.error('Error fetching medication request:', error)
-      return response.status(404).json({
-        message: 'Request not found',
-      })
+      authUser = await auth.authenticate()
+    } catch (err) {
+      console.warn('MedicationRequests.show auth failed:', err.message)
+      return response.unauthorized({ message: 'Not authenticated' })
     }
+
+    // load user + role
+    let user
+    try {
+      user = await User.query().where('id', authUser.id).preload('role').firstOrFail()
+    } catch (err) {
+      console.error('MedicationRequests.show failed loading user:', err)
+      return response.status(500).json({ message: 'Failed to load user' })
+    }
+
+    // find the request (simple find to avoid preload errors hiding the cause)
+    let medicationRequest
+    try {
+      medicationRequest = await MedicationRequest.find(params.id)
+      if (!medicationRequest) {
+        console.info(`MedicationRequests.show not found id=${params.id}`)
+        return response.status(404).json({ message: 'Request not found' })
+      }
+    } catch (err) {
+      console.error('MedicationRequests.show DB lookup error:', err)
+      return response.status(500).json({ message: 'Database error', error: err.message })
+    }
+
+    // attempt to preload relations, but do not fail on preload errors
+    try {
+      await medicationRequest.load('user', (q) => q.preload('role'))
+      await medicationRequest.load('assignedUser', (q) => q.preload('role'))
+      await medicationRequest.load('beneficiary')
+    } catch (warn) {
+      console.warn('MedicationRequests.show preload warning:', warn)
+    }
+
+    // authorization: super_admin OR owner OR assigned user
+    const roleName = user.role?.name ?? ''
+    const isOwner = medicationRequest.userId === user.id
+    const assignedTo =
+      // support both camelCase and snake_case fields if model/db differs
+      (medicationRequest as any).assignedTo ?? (medicationRequest as any).assigned_to
+    const isAssigned = assignedTo === user.id
+
+    if (roleName !== 'super_admin' && !isOwner && !isAssigned) {
+      return response.status(403).json({ message: 'Unauthorized to view this request' })
+    }
+
+    return response.ok({ request: medicationRequest })
   }
 
   public async update({ params, request, response, auth }: HttpContext) {
@@ -362,6 +415,145 @@ export default class MedicationRequestsController {
       return response.status(404).json({
         message: 'Request not found',
       })
+    }
+  }
+
+  // GET /medication-requests/assigned
+  // returns requests assigned to the authenticated user
+  public async assignedList({ auth, response }: HttpContext) {
+    try {
+      const authUser = await auth.authenticate()
+
+      const user = await User.query().where('id', authUser.id).preload('role').firstOrFail()
+
+      const requests = await MedicationRequest.query()
+        .where('assigned_to', user.id)
+        .preload('user', (q) => q.preload('role'))
+        .preload('beneficiary')
+        .orderBy('created_at', 'desc')
+
+      return response.ok({ requests })
+    } catch (err) {
+      console.error('Error loading assigned requests', err)
+      return response.status(500).json({ message: 'Failed to load assigned requests' })
+    }
+  }
+
+  // POST /medication-requests/:id/assign
+  // body: { assignedTo: number }  (user id of supplier/practitioner)
+  public async assign({ params, request, response, auth }: HttpContext) {
+    try {
+      // authenticate
+      const authUser = await auth.authenticate()
+      const user = await User.query().where('id', authUser.id).preload('role').firstOrFail()
+
+      // permission check
+      if (user.role.name !== 'super_admin' && user.role.name !== 'admin') {
+        return response.forbidden({ message: 'Not allowed to assign requests' })
+      }
+
+      // find request
+      const medicationRequest = await MedicationRequest.findOrFail(params.id)
+
+      // read assigned user id from request (support camelCase or snake_case)
+      const assignedToRaw = request.input('assignedTo') ?? request.input('assigned_to')
+      const assignedTo = Number(assignedToRaw)
+      if (!assignedTo || Number.isNaN(assignedTo)) {
+        return response.badRequest({
+          message: 'assignedTo is required and must be a valid user id',
+        })
+      }
+
+      // ensure assigned user exists
+      const assignedUser = await User.find(assignedTo)
+      if (!assignedUser)
+        return response.badRequest({ message: 'Assigned user not found' })
+
+        // write to model using both possible property names; avoid TypeScript complaints with a cast
+      ;(medicationRequest as any).assignedTo = assignedUser.id
+      ;(medicationRequest as any).assigned_to = assignedUser.id
+      const curr = (medicationRequest as any).status as string | undefined
+      if (!curr || curr === 'pending') {
+        ;(medicationRequest as any).status = 'in_progress'
+      }
+
+      await medicationRequest.save()
+
+      // preload relations for response
+      try {
+        await medicationRequest.load('assignedUser')
+        await medicationRequest.load('user')
+        await medicationRequest.load('beneficiary')
+      } catch (warn) {
+        console.warn('Preload warning after assign:', warn)
+      }
+
+      return response.ok({
+        message: 'Request assigned',
+        request: medicationRequest,
+      })
+    } catch (err: any) {
+      console.error('Error assigning request', err)
+      // if failure came from findOrFail it will be thrown; surface helpful message
+      return response
+        .status(500)
+        .json({ message: 'Failed to assign request', error: err.message ?? err })
+    }
+  }
+
+  // POST /medication-requests/:id/fulfill
+  public async fulfill({ params, request, response, auth }: HttpContext) {
+    try {
+      const authUser = await auth.authenticate()
+      const user = await User.query().where('id', authUser.id).preload('role').firstOrFail()
+
+      const medicationRequest = await MedicationRequest.query()
+        .where('id', params.id)
+        .preload('assignedUser')
+        .firstOrFail()
+
+      // Authorization: assigned user or super admin
+      const assignedTo =
+        (medicationRequest as any).assignedTo ?? (medicationRequest as any).assigned_to
+      if (user.role.name !== 'super_admin' && assignedTo !== user.id) {
+        return response.forbidden({ message: 'Not allowed to fulfill this request' })
+      }
+
+      // Server-side duplicate check
+      if ((medicationRequest as any).status === 'fulfilled') {
+        return response.conflict({ message: 'Request already fulfilled' })
+      }
+
+      // Use a transaction to safely update and record audit info
+      await db.transaction(async (trx) => {
+        // bind instance to transaction
+        ;(medicationRequest as any).useTransaction?.(trx)
+
+        // set status and fulfillment fields
+        ;(medicationRequest as any).status = 'fulfilled'
+        ;(medicationRequest as any).fulfilledBy = user.id
+        ;(medicationRequest as any).fulfilledAt = DateTime.local()
+        const note = request.input('note')
+        if (note) (medicationRequest as any).fulfillmentNote = note
+
+        await medicationRequest.save()
+      })
+
+      // reload relations
+      try {
+        await medicationRequest.load('user')
+        await medicationRequest.load('assignedUser')
+        await medicationRequest.load('beneficiary')
+      } catch (warn) {
+        console.warn('Preload warning after fulfill:', warn)
+      }
+
+      return response.ok({ message: 'Request marked fulfilled', request: medicationRequest })
+    } catch (err: any) {
+      console.error('Error fulfilling request', err)
+      return response
+        .status(500)
+        .json({ message: 'Failed to mark as fulfilled', error: err.message ?? err })
     }
   }
 }
