@@ -8,64 +8,6 @@ import { Exception } from '@adonisjs/core/exceptions'
 import { userRegistered } from '../../Mail/email.js'
 import mail from '@adonisjs/mail/services/main'
 export default class AuthController {
-  // public async register({ request, response }: HttpContext) {
-  //   try {
-  //     const payload = await request.validateUsing(createUserValidator)
-
-  //     const role = await Role.findByOrFail('name', payload.role)
-
-  //     const user = await User.create({
-  //       ...payload,
-  //       roleId: role.id,
-  //       status: 'pending',
-  //     })
-
-  //     // Load user with role and permissions
-  //     await user.load('role', (roleQuery) => {
-  //       roleQuery.preload('permissions')
-  //     })
-  //     // Create token
-  //     const token = await User.accessTokens.create(user)
-
-  //     // build email
-  //     const { subject, html, text } = userRegistered({
-  //       userName: user.fullName || 'there',
-  //       appName: 'Cross Shield',
-  //       // verifyUrl: `https://yourapp.com/verify?token=${user.verificationToken}`,
-  //       supportEmail: 'support@crossshieldhc.com',
-  //     })
-
-  //     try {
-  //       await mail.send((m) => {
-  //         m.to(user.email)
-  //         m.subject(subject)
-  //         m.html(html)
-  //         m.text(text)
-  //       })
-  //     } catch (e) {
-  //       console.error('welcome email failed', e)
-  //     }
-  //     return response.status(201).json({
-  //       message: 'Registration successful',
-  //       user: user.toJSON(), // Return directly
-  //       token: token.value!.release(),
-  //     })
-  //   } catch (error) {
-  //     if (error instanceof Exception && 'messages' in error) {
-  //       return response.status(422).json({
-  //         message: 'Validation failed',
-  //         errors: error.messages,
-  //       })
-  //     }
-
-  //     console.error('Registration error:', error)
-  //     return response.status(500).json({
-  //       message: 'Registration failed',
-  //       error: error instanceof Error ? error.message : 'Unknown error',
-  //     })
-  //   }
-  // }
-
   public async register({ request, response }: HttpContext) {
     const trx = await db.transaction()
     try {

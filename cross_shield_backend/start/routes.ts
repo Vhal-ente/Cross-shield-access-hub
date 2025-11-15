@@ -73,7 +73,7 @@ Route.group(() => {
 
 // File Upload Routes
 Route.group(() => {
-  Route.post('/upload', async ({ request, response }) => {
+  Route.post('/upload', async ({ response }) => {
     return response.json({ message: 'File upload endpoint' })
   })
 })

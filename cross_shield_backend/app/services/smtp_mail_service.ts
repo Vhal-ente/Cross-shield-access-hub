@@ -35,7 +35,7 @@ async function sendEmail(args: SendArgs) {
   })
 }
 
-export async function sendUserRegisteredEmail(user: BasicUser, verifyUrl?: string) {
+export async function sendUserRegisteredEmail(user: BasicUser /*, verifyUrl?: string */) {
   const t = userRegistered({
     userName: user.fullName || 'there',
     appName: 'Cross Shield',

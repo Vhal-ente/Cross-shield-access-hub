@@ -854,7 +854,7 @@ export default class SuperAdminController {
   /**
    * Approve or reject an advert
    */
-  async handleAdvert({ request, response, params }: HttpContext) {
+  async handleAdvert({ request, response }: HttpContext) {
     const validationSchema = schema.create({
       action: schema.enum(['approve', 'reject'] as const),
     })

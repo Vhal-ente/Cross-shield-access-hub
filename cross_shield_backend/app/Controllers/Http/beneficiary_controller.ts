@@ -1,6 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Beneficiary from '#models/beneficiary'
-// import User from '#models/user'
 import { createBeneficiaryValidator, updateBeneficiaryValidator } from '#validators/beneficiary'
 import { DateTime } from 'luxon'
 

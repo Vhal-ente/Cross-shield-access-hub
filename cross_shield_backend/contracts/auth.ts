@@ -5,47 +5,30 @@
  * file.
  */
 
-import {
-  OATGuardContract,
-  OATGuardConfig,
-  SessionClientContract,
-  OATClientContract,
+// 1. Import all v6 types AND your User model
+import type {
   SessionGuardContract,
-  SessionGuardConfig, // Added import for SessionGuardConfig
-  LucidProviderContract,
-} from '@ioc:Adonis/Addons/Auth'
-import { LucidProviderConfig } from '@ioc:Adonis/Addons/Auth' // Add this import
+  SessionGuardConfig,
+  AccessTokenGuardContract,
+  AccessTokenGuardConfig,
+  LucidUserProviderContract,
+  LucidUserProviderConfig, // Use the v6 config type
+} from '@adonisjs/auth/types'
 
-declare module '@ioc:Adonis/Addons/Auth' {
+import type User from '#models/user' // 👈 Import your User model
+
+// 2. Use the v6 module path for the declaration
+declare module '@adonisjs/auth/types' {
   /*
   |--------------------------------------------------------------------------
   | Providers
   |--------------------------------------------------------------------------
-  |
-  | The providers are used to fetch users. The Auth module comes with two
-  | providers that are `Lucid` and `Database`. Both uses database to fetch
-  | user details.
-  |
-  | You can also create and register your own custom providers.
-  |
   */
-
   interface ProvidersList {
-    /*
-      |--------------------------------------------------------------------------
-      | User Provider
-      |--------------------------------------------------------------------------
-      |
-      | The following provider uses Lucid models as a driver for fetching user
-      | details from the database for authentication.
-      |
-      | You can create multiple providers using the same underlying driver with
-      | different Lucid models.
-      |
-      */
     user: {
-      implementation: LucidProviderContract<typeof import('#models/user')>
-      config: LucidProviderConfig<typeof import('#models/user')>
+      // 3. Use v6 type names and the imported User model
+      implementation: LucidUserProviderContract<typeof User>
+      config: LucidUserProviderConfig<typeof User>
     }
   }
 
@@ -54,14 +37,10 @@ declare module '@ioc:Adonis/Addons/Auth' {
   | Guards
   |--------------------------------------------------------------------------
   |
-  | The guards are used for authenticating users using different drivers.
-  | The auth module comes with 3 different guards.
+  | Guards are used for authenticating users. The auth module comes with:
   |
   | - SessionGuardContract
-  | - BasicAuthGuardContract
-  | - OATGuardContract ( Opaque access token )
-  |
-  | Every guard needs a provider for looking up users from the database.
+  | - AccessTokenGuardContract (Opaque access token)
   |
   */
   interface GuardsList {
@@ -69,30 +48,22 @@ declare module '@ioc:Adonis/Addons/Auth' {
     |--------------------------------------------------------------------------
     | Web Guard
     |--------------------------------------------------------------------------
-    |
-    | The web guard uses sessions for maintaining user login state. It uses
-    | the `user` provider for fetching user details.
-    |
     */
     web: {
-      implementation: SessionGuardContract<'user', 'web'>
-      config: SessionGuardConfig<'user'>
-      client: SessionClientContract<'user'>
+      // 4. Use simplified v6 guard types
+      implementation: SessionGuardContract<typeof User>
+      config: SessionGuardConfig
     }
 
     /*
     |--------------------------------------------------------------------------
     | API Guard
     |--------------------------------------------------------------------------
-    |
-    | The API guard uses opaque access tokens for authenticating requests. It
-    | uses the `user` provider for fetching user details.
-    |
     */
     api: {
-      implementation: OATGuardContract<'user', 'api'>
-      config: OATGuardConfig<'user'>
-      client: OATClientContract<'user'>
+      // 5. Use AccessTokenGuardContract (replaces OATGuardContract)
+      implementation: AccessTokenGuardContract<typeof User>
+      config: AccessTokenGuardConfig
     }
   }
 }
